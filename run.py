@@ -18,6 +18,7 @@ def ensure_model_bundle() -> None:
     if ARTIFACT_PATH.exists():
         return
 
+
     print("Model bundle belum ditemukan, menjalankan `main.py` terlebih dahulu...")
     subprocess.run([sys.executable, "main.py"], cwd=BASE_DIR, check=True)
 

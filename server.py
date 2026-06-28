@@ -237,6 +237,70 @@ def _as_asset_flag(value: Any) -> int:
     return 1
 
 
+def _family_members(jumlah_tanggungan: int) -> int:
+    return max(1, int(jumlah_tanggungan)) + 1
+
+
+def _basic_needs(jumlah_tanggungan: int, jenis_lantai: str, jenis_dinding: str, luas_tempat: str) -> float:
+    anggota = _family_members(jumlah_tanggungan)
+    biaya_tempat = {
+        "sangat kecil": 100_000,
+        "kecil": 150_000,
+        "sedang": 250_000,
+        "besar": 400_000,
+    }.get(luas_tempat, 200_000)
+    faktor_dinding = {
+        "tembok": 0,
+        "semi": 50_000,
+        "bilik": 100_000,
+        "bambu": 150_000,
+        "lainnya": 75_000,
+    }.get(jenis_dinding, 75_000)
+    return float((anggota * 500_000) + biaya_tempat + faktor_dinding)
+
+
+def _house_score(luas_tempat: str, jenis_dinding: str, jenis_lantai: str) -> int:
+    return (
+        {"sangat kecil": 0, "kecil": 1, "sedang": 2, "besar": 3}.get(luas_tempat, 2)
+        + {"bambu": 0, "bilik": 1, "semi": 2, "tembok": 3, "lainnya": 1}.get(jenis_dinding, 1)
+        + {"tanah": 0, "panggung": 1, "semen": 2, "keramik": 3, "lainnya": 1}.get(jenis_lantai, 1)
+    )
+
+
+def _economic_ability_score(
+    total_pendapatan: float,
+    jumlah_tanggungan: int,
+    kepemilikan_aset: int,
+    jenis_lantai: str,
+    jenis_dinding: str,
+    luas_tempat: str,
+) -> int:
+    kebutuhan = _basic_needs(jumlah_tanggungan, jenis_lantai, jenis_dinding, luas_tempat)
+    anggota = _family_members(jumlah_tanggungan)
+    pendapatan_per_anggota = total_pendapatan / anggota if anggota > 0 else 0
+    rasio = total_pendapatan / kebutuhan if kebutuhan > 0 else 0
+    skor_rumah = _house_score(luas_tempat, jenis_dinding, jenis_lantai)
+
+    score = 0
+    if rasio >= 1.25:
+        score += 2
+    elif rasio >= 1.0:
+        score += 1
+    if pendapatan_per_anggota >= 1_000_000:
+        score += 2
+    elif pendapatan_per_anggota >= 750_000:
+        score += 1
+    if int(kepemilikan_aset) == 1:
+        score += 1
+    if jumlah_tanggungan <= 2 and total_pendapatan >= 2_000_000:
+        score += 1
+    if skor_rumah >= 8:
+        score += 2
+    elif skor_rumah >= 6:
+        score += 1
+    return score
+
+
 def _build_input_frame(data: MustahikRequest) -> pd.DataFrame:
     total_pendapatan = data.total_pendapatan
     if total_pendapatan is None:
@@ -247,17 +311,46 @@ def _build_input_frame(data: MustahikRequest) -> pd.DataFrame:
             )
         total_pendapatan = float(data.suami or 0) + float(data.istri or 0)
 
-    row = [
-        float(total_pendapatan),
-        int(data.jumlah_tanggungan),
-        _normalize_to_encoder_value("JENIS USAHA/PEKERJAAN", data.jenis_usaha_pekerjaan),
-        _as_asset_flag(data.kepemilikan_aset),
-        _normalize_to_encoder_value("LUAS TEMPAT TINGGAL", data.luas_tempat_tinggal),
-        _normalize_to_encoder_value("JENIS DINDING", data.jenis_dinding),
-        _normalize_to_encoder_value("JENIS LANTAI", data.jenis_lantai),
-    ]
+    jumlah_tanggungan = int(data.jumlah_tanggungan)
+    jenis_usaha = _normalize_to_encoder_value("JENIS USAHA/PEKERJAAN", data.jenis_usaha_pekerjaan)
+    kepemilikan_aset = _as_asset_flag(data.kepemilikan_aset)
+    luas_tempat = _normalize_to_encoder_value("LUAS TEMPAT TINGGAL", data.luas_tempat_tinggal)
+    jenis_dinding = _normalize_to_encoder_value("JENIS DINDING", data.jenis_dinding)
+    jenis_lantai = _normalize_to_encoder_value("JENIS LANTAI", data.jenis_lantai)
+    jumlah_anggota = _family_members(jumlah_tanggungan)
+    kebutuhan_dasar = _basic_needs(jumlah_tanggungan, jenis_lantai, jenis_dinding, luas_tempat)
 
-    frame = pd.DataFrame([row], columns=feature_names)
+    values = {
+        "TOTAL_PENDAPATAN": float(total_pendapatan),
+        "JUMLAH TANGGUNGAN": jumlah_tanggungan,
+        "JENIS USAHA/PEKERJAAN": jenis_usaha,
+        "KEPEMILIKAN ASET": kepemilikan_aset,
+        "LUAS TEMPAT TINGGAL": luas_tempat,
+        "JENIS DINDING": jenis_dinding,
+        "JENIS LANTAI": jenis_lantai,
+        "JUMLAH_ANGGOTA_KELUARGA": jumlah_anggota,
+        "KEBUTUHAN_DASAR": kebutuhan_dasar,
+        "PENDAPATAN_PER_ANGGOTA": float(total_pendapatan) / jumlah_anggota,
+        "RASIO_PENDAPATAN_KEBUTUHAN": float(total_pendapatan) / kebutuhan_dasar if kebutuhan_dasar > 0 else 0.0,
+        "SKOR_KONDISI_RUMAH": _house_score(luas_tempat, jenis_dinding, jenis_lantai),
+        "SKOR_KEMAMPUAN_EKONOMI": _economic_ability_score(
+            float(total_pendapatan),
+            jumlah_tanggungan,
+            kepemilikan_aset,
+            jenis_lantai,
+            jenis_dinding,
+            luas_tempat,
+        ),
+    }
+
+    missing_features = [name for name in feature_names if name not in values]
+    if missing_features:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Fitur model belum didukung backend: {missing_features}",
+        )
+
+    frame = pd.DataFrame([{name: values[name] for name in feature_names}])
 
     for column, encoder in feature_encoders.items():
         frame[column] = encoder.transform(frame[column].astype(str))
@@ -323,12 +416,14 @@ def predict(data: MustahikRequest):
         input_data = _build_input_frame(data)
         input_array = input_data.to_numpy(dtype=float)
 
+        prediksi_naive_bayes = _predict_with_algorithm("naive_bayes", input_array)
         algoritma_terbaik = _predict_with_algorithm(BEST_ALGORITHM_KEY, input_array)
 
         return {
             "nama": data.nama,
             "no_kk": data.no_kk,
             "total_pendapatan": float(input_data["TOTAL_PENDAPATAN"].iloc[0]),
+            "prediksi_naive_bayes": prediksi_naive_bayes,
             "algoritma_terbaik": algoritma_terbaik,
             "perbandingan_akurasi": {
                 "naive_bayes": {
@@ -344,7 +439,7 @@ def predict(data: MustahikRequest):
                 "dipilih": ALGORITHM_LABELS[BEST_ALGORITHM_KEY],
             },
             "analisis_perbandingan": _build_comparison_summary(),
-            "kesimpulan": algoritma_terbaik["kelayakan"],
+            "kesimpulan": prediksi_naive_bayes["kelayakan"],
         }
     except HTTPException:
         raise

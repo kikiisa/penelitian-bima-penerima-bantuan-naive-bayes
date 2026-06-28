@@ -19,6 +19,7 @@ from sklearn.model_selection import (
     cross_val_score,                       # Untuk evaluasi model dengan cross-validation
     StratifiedKFold                        # Untuk cross-validation dengan distribusi kelas yang seimbang
 )
+from sklearn.pipeline import make_pipeline  # Pipeline agar scaler CV tidak mengubah scaler produksi
 from sklearn.naive_bayes import GaussianNB # Algoritma Naive Bayes untuk fitur numerik
 from sklearn.tree import (
     DecisionTreeClassifier,                # Algoritma Decision Tree (C4.5 menggunakan criterion='entropy')
@@ -207,11 +208,84 @@ def normalisasi_aset(nilai):
     Menyeragamkan kepemilikan aset ke nilai biner:
     - 0 : tidak ada aset
     - 1 : memiliki aset
-    Dalam dataset ini semua bernilai 'Tidak ada', tapi fungsi ini
-    disiapkan untuk dataset yang lebih lengkap.
     """
     v = normalisasi_teks(nilai)
     return 0 if 'tidak ada' in v or v == '' else 1
+
+
+def hitung_jumlah_anggota(jumlah_tanggungan):
+    """
+    Jumlah tanggungan pada data mewakili anggota keluarga yang ditanggung.
+    Kepala keluarga tetap dihitung agar indikator per kapita lebih stabil.
+    """
+    return max(1, int(jumlah_tanggungan)) + 1
+
+
+def skor_kondisi_rumah(luas_tempat, jenis_dinding, jenis_lantai):
+    """
+    Skor 0-9 untuk menggambarkan kemampuan ekonomi dari kondisi tempat tinggal.
+    Nilai besar berarti kondisi rumah makin mapan.
+    """
+    skor_luas = {
+        'sangat kecil': 0,
+        'kecil': 1,
+        'sedang': 2,
+        'besar': 3,
+    }.get(luas_tempat, 2)
+    skor_dinding = {
+        'bambu': 0,
+        'bilik': 1,
+        'semi': 2,
+        'tembok': 3,
+        'lainnya': 1,
+    }.get(jenis_dinding, 1)
+    skor_lantai = {
+        'tanah': 0,
+        'panggung': 1,
+        'semen': 2,
+        'keramik': 3,
+        'lainnya': 1,
+    }.get(jenis_lantai, 1)
+    return skor_luas + skor_dinding + skor_lantai
+
+
+def hitung_skor_kemampuan_ekonomi(penghasilan_total, jumlah_tanggungan,
+                                  kepemilikan_aset, jenis_lantai,
+                                  jenis_dinding, luas_tempat):
+    """
+    Menggabungkan sinyal pendapatan, aset, tanggungan, dan rumah.
+    Skor ini dipakai sebagai fitur agar model melihat kemampuan ekonomi
+    secara lebih representatif daripada pola kategorikal mentah saja.
+    """
+    kebutuhan = hitung_kebutuhan_dasar(
+        jumlah_tanggungan, jenis_lantai, jenis_dinding, luas_tempat
+    )
+    anggota = hitung_jumlah_anggota(jumlah_tanggungan)
+    pendapatan_per_anggota = penghasilan_total / anggota if anggota > 0 else 0
+    rasio = penghasilan_total / kebutuhan if kebutuhan > 0 else 0
+    skor_rumah = skor_kondisi_rumah(luas_tempat, jenis_dinding, jenis_lantai)
+
+    skor = 0
+    if rasio >= 1.25:
+        skor += 2
+    elif rasio >= 1.0:
+        skor += 1
+
+    if pendapatan_per_anggota >= 1_000_000:
+        skor += 2
+    elif pendapatan_per_anggota >= 750_000:
+        skor += 1
+
+    if int(kepemilikan_aset) == 1:
+        skor += 1
+    if jumlah_tanggungan <= 2 and penghasilan_total >= 2_000_000:
+        skor += 1
+    if skor_rumah >= 8:
+        skor += 2
+    elif skor_rumah >= 6:
+        skor += 1
+
+    return skor
 
 
 # =============================================================================
@@ -233,7 +307,7 @@ def hitung_kebutuhan_dasar(jumlah_tanggungan, jenis_lantai, jenis_dinding, luas_
         float: estimasi kebutuhan dasar per bulan (Rupiah)
     """
     # Kebutuhan dasar per anggota keluarga (termasuk kepala keluarga)
-    anggota = max(1, jumlah_tanggungan) + 1     # +1 untuk kepala keluarga
+    anggota = hitung_jumlah_anggota(jumlah_tanggungan)
     kebutuhan_per_orang = 500_000               # Rp 500.000/orang/bulan
 
     # Faktor biaya tempat tinggal berdasarkan luas (sewa/perawatan estimasi)
@@ -259,7 +333,8 @@ def hitung_kebutuhan_dasar(jumlah_tanggungan, jenis_lantai, jenis_dinding, luas_
 
 
 def tentukan_status(penghasilan_total, jumlah_tanggungan, pendidikan,
-                    jenis_lantai, jenis_dinding, luas_tempat):
+                    jenis_lantai, jenis_dinding, luas_tempat,
+                    kepemilikan_aset):
     """
     Menentukan status kesejahteraan berdasarkan perbandingan
     penghasilan dengan kebutuhan dasar.
@@ -271,6 +346,10 @@ def tentukan_status(penghasilan_total, jumlah_tanggungan, pendidikan,
                 (ada penghasilan tapi masih kurang)
     - MAMPU  : penghasilan >= 100% kebutuhan dasar
                 (penghasilan mencukupi kebutuhan dasar)
+
+    Koreksi kemampuan ekonomi:
+    - Pendapatan cukup, tanggungan rendah, memiliki aset, dan rumah mapan
+      tidak dilabeli Fakir/Miskin walaupun pola historis dataset mengarah ke sana.
     
     Returns:
         str: 'Fakir', 'Miskin', atau 'Mampu'
@@ -280,6 +359,32 @@ def tentukan_status(penghasilan_total, jumlah_tanggungan, pendidikan,
     )
 
     rasio = penghasilan_total / kebutuhan if kebutuhan > 0 else 0
+    anggota = hitung_jumlah_anggota(jumlah_tanggungan)
+    pendapatan_per_anggota = penghasilan_total / anggota if anggota > 0 else 0
+    skor_rumah = skor_kondisi_rumah(luas_tempat, jenis_dinding, jenis_lantai)
+    skor_kemampuan = hitung_skor_kemampuan_ekonomi(
+        penghasilan_total,
+        jumlah_tanggungan,
+        kepemilikan_aset,
+        jenis_lantai,
+        jenis_dinding,
+        luas_tempat,
+    )
+
+    indikator_mampu_kuat = (
+        penghasilan_total >= 2_500_000
+        and jumlah_tanggungan <= 2
+        and int(kepemilikan_aset) == 1
+        and skor_rumah >= 8
+    )
+    indikator_mampu_umum = (
+        skor_kemampuan >= 5
+        or (rasio >= 1.15 and int(kepemilikan_aset) == 1 and skor_rumah >= 6)
+        or (pendapatan_per_anggota >= 1_000_000 and skor_rumah >= 7)
+    )
+
+    if indikator_mampu_kuat or indikator_mampu_umum:
+        return 'Mampu'
 
     if rasio < 0.5:
         # Penghasilan kurang dari setengah kebutuhan dasar -> FAKIR
@@ -328,12 +433,21 @@ def load_dan_proses_data():
     print("=" * 60)
 
     # ---- 4.1 Baca data dari string CSV ----
-    df = pd.read_csv('datasets/baznas-2.csv', dtype=str)  # Baca semua kolom sebagai string
+    df = pd.read_csv('datasets/baznas-3.csv', dtype=str)  # Baca semua kolom sebagai string
     print(f"Data mentah dimuat: {len(df)} baris, {len(df.columns)} kolom")
 
     # Hapus baris yang seluruhnya kosong (baris header/footer kosong)
     df = df.dropna(how='all')
     print(f"Setelah hapus baris kosong: {len(df)} baris")
+
+    # Hapus baris header yang tersisip di tengah file CSV.
+    sebelum_header_ganda = len(df)
+    df = df[
+        df['NAMA'].fillna('').str.strip().str.upper().ne('NAMA')
+        & df['SUAMI'].fillna('').str.strip().str.upper().ne('SUAMI')
+    ].copy()
+    if len(df) != sebelum_header_ganda:
+        print(f"Setelah hapus header ganda: {len(df)} baris")
 
     # ---- 4.2 Bersihkan kolom nama (hapus spasi berlebih) ----
     df['NAMA'] = df['NAMA'].str.strip()
@@ -369,12 +483,48 @@ def load_dan_proses_data():
             row['PENDIDIKAN'],
             row['JENIS LANTAI'],
             row['JENIS DINDING'],
+            row['LUAS TEMPAT TINGGAL'],
+            row['KEPEMILIKAN ASET']
+        ),
+        axis=1
+    )
+
+    # ---- 4.7 Buat fitur turunan ekonomi ----
+    # Fitur ini membantu model membedakan keluarga rentan dari keluarga yang
+    # memiliki pendapatan, aset, dan kondisi rumah yang relatif mapan.
+    df['JUMLAH_ANGGOTA_KELUARGA'] = df['JUMLAH TANGGUNGAN'].apply(hitung_jumlah_anggota)
+    df['KEBUTUHAN_DASAR'] = df.apply(
+        lambda row: hitung_kebutuhan_dasar(
+            row['JUMLAH TANGGUNGAN'],
+            row['JENIS LANTAI'],
+            row['JENIS DINDING'],
+            row['LUAS TEMPAT TINGGAL']
+        ),
+        axis=1
+    )
+    df['PENDAPATAN_PER_ANGGOTA'] = df['TOTAL_PENDAPATAN'] / df['JUMLAH_ANGGOTA_KELUARGA']
+    df['RASIO_PENDAPATAN_KEBUTUHAN'] = df['TOTAL_PENDAPATAN'] / df['KEBUTUHAN_DASAR']
+    df['SKOR_KONDISI_RUMAH'] = df.apply(
+        lambda row: skor_kondisi_rumah(
+            row['LUAS TEMPAT TINGGAL'],
+            row['JENIS DINDING'],
+            row['JENIS LANTAI']
+        ),
+        axis=1
+    )
+    df['SKOR_KEMAMPUAN_EKONOMI'] = df.apply(
+        lambda row: hitung_skor_kemampuan_ekonomi(
+            row['TOTAL_PENDAPATAN'],
+            row['JUMLAH TANGGUNGAN'],
+            row['KEPEMILIKAN ASET'],
+            row['JENIS LANTAI'],
+            row['JENIS DINDING'],
             row['LUAS TEMPAT TINGGAL']
         ),
         axis=1
     )
 
-    # ---- 4.7 Buat kolom KELAYAKAN berdasarkan STATUS ----
+    # ---- 4.8 Buat kolom KELAYAKAN berdasarkan STATUS ----
     # Fakir & Miskin -> Layak; Mampu -> Tidak Layak
     df['KELAYAKAN'] = df['STATUS'].apply(tentukan_kelayakan)
 
@@ -410,6 +560,7 @@ def siapkan_fitur(df):
     - LUAS TEMPAT TINGGAL  : ukuran rumah (dikodekan)
     - JENIS DINDING        : material dinding (dikodekan)
     - JENIS LANTAI         : material lantai (dikodekan)
+    - PENDAPATAN_PER_ANGGOTA, RASIO, dan skor ekonomi sebagai indikator kemampuan
     
     Returns:
         X (np.array): matriks fitur
@@ -430,6 +581,12 @@ def siapkan_fitur(df):
         'LUAS TEMPAT TINGGAL',
         'JENIS DINDING',
         'JENIS LANTAI',
+        'JUMLAH_ANGGOTA_KELUARGA',
+        'KEBUTUHAN_DASAR',
+        'PENDAPATAN_PER_ANGGOTA',
+        'RASIO_PENDAPATAN_KEBUTUHAN',
+        'SKOR_KONDISI_RUMAH',
+        'SKOR_KEMAMPUAN_EKONOMI',
     ]
 
     # Kolom kategorik yang perlu diubah ke angka
@@ -524,7 +681,8 @@ def latih_dan_evaluasi(X, y, nama_fitur, le_y):
 
     # Cross-validation Naive Bayes (5-fold) untuk estimasi performa yang lebih stabil
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    cv_nb = cross_val_score(model_nb, scaler.fit_transform(X), y, cv=cv, scoring='accuracy')
+    cv_nb_model = make_pipeline(StandardScaler(), GaussianNB())
+    cv_nb = cross_val_score(cv_nb_model, X, y, cv=cv, scoring='accuracy')
     print(f"\n  Cross-Validation (5-fold): {cv_nb.mean():.4f} ± {cv_nb.std():.4f}")
 
     # ---- 6.3 Decision Tree C4.5 ----
@@ -719,7 +877,7 @@ def build_comparison_summary(metrics):
 # Memungkinkan pengguna memprediksi status seseorang secara manual
 # =============================================================================
 
-def prediksi_baru(model_nb, model_dt, scaler, le_y, encoders):
+def prediksi_baru(model_nb, model_dt, scaler, le_y, encoders, nama_fitur):
     """
     Contoh penggunaan model untuk memprediksi status individu baru
     yang belum ada dalam dataset.
@@ -730,6 +888,7 @@ def prediksi_baru(model_nb, model_dt, scaler, le_y, encoders):
         scaler: StandardScaler yang sudah di-fit pada data latih
         le_y: LabelEncoder untuk label kelas
         encoders: dictionary LabelEncoder per kolom kategorik
+        nama_fitur: urutan fitur yang sama dengan data training
     """
     print(f"\n{'=' * 60}")
     print("  CONTOH PREDIKSI DATA BARU")
@@ -738,30 +897,42 @@ def prediksi_baru(model_nb, model_dt, scaler, le_y, encoders):
     # ---- Definisi data individu baru yang ingin diprediksi ----
     # Format sama seperti fitur training
     contoh = {
-        'TOTAL_PENDAPATAN'      : 600_000,      # Total pendapatan gabungan: Rp 600.000
-        'JUMLAH TANGGUNGAN'     : 4,            # 4 anggota keluarga
-        'JENIS USAHA/PEKERJAAN' : 'perdagangan',# Pekerjaan: berdagang
-        'KEPEMILIKAN ASET'      : 0,            # Tidak memiliki aset
-        'LUAS TEMPAT TINGGAL'   : 'kecil',      # Rumah kecil
-        'JENIS DINDING'         : 'semi',       # Dinding semi permanen
-        'JENIS LANTAI'          : 'semen',      # Lantai semen
+        'TOTAL_PENDAPATAN'      : 2_500_000,    # Total pendapatan gabungan: Rp 2.500.000
+        'JUMLAH TANGGUNGAN'     : 1,            # Tanggungan rendah
+        'JENIS USAHA/PEKERJAAN' : 'karyawan',   # Pekerjaan stabil
+        'KEPEMILIKAN ASET'      : 1,            # Memiliki aset
+        'LUAS TEMPAT TINGGAL'   : 'besar',      # Rumah besar
+        'JENIS DINDING'         : 'tembok',     # Dinding permanen
+        'JENIS LANTAI'          : 'keramik',    # Lantai ubin/keramik
     }
 
-    # Urutkan sesuai kolom_fitur yang dipakai saat training
-    kolom_fitur = [
-        'TOTAL_PENDAPATAN', 'JUMLAH TANGGUNGAN',
-        'JENIS USAHA/PEKERJAAN', 'KEPEMILIKAN ASET',
-        'LUAS TEMPAT TINGGAL', 'JENIS DINDING', 'JENIS LANTAI'
-    ]
-
-    # Konversi kolom kategorik menggunakan encoder yang sama dari training
-    kolom_kategorik = ['JENIS USAHA/PEKERJAAN', 'LUAS TEMPAT TINGGAL',
-                       'JENIS DINDING', 'JENIS LANTAI']
+    contoh['JUMLAH_ANGGOTA_KELUARGA'] = hitung_jumlah_anggota(contoh['JUMLAH TANGGUNGAN'])
+    contoh['KEBUTUHAN_DASAR'] = hitung_kebutuhan_dasar(
+        contoh['JUMLAH TANGGUNGAN'],
+        contoh['JENIS LANTAI'],
+        contoh['JENIS DINDING'],
+        contoh['LUAS TEMPAT TINGGAL']
+    )
+    contoh['PENDAPATAN_PER_ANGGOTA'] = contoh['TOTAL_PENDAPATAN'] / contoh['JUMLAH_ANGGOTA_KELUARGA']
+    contoh['RASIO_PENDAPATAN_KEBUTUHAN'] = contoh['TOTAL_PENDAPATAN'] / contoh['KEBUTUHAN_DASAR']
+    contoh['SKOR_KONDISI_RUMAH'] = skor_kondisi_rumah(
+        contoh['LUAS TEMPAT TINGGAL'],
+        contoh['JENIS DINDING'],
+        contoh['JENIS LANTAI']
+    )
+    contoh['SKOR_KEMAMPUAN_EKONOMI'] = hitung_skor_kemampuan_ekonomi(
+        contoh['TOTAL_PENDAPATAN'],
+        contoh['JUMLAH TANGGUNGAN'],
+        contoh['KEPEMILIKAN ASET'],
+        contoh['JENIS LANTAI'],
+        contoh['JENIS DINDING'],
+        contoh['LUAS TEMPAT TINGGAL']
+    )
 
     vektor = []
-    for kol in kolom_fitur:
+    for kol in nama_fitur:
         nilai = contoh[kol]
-        if kol in kolom_kategorik:
+        if kol in encoders:
             # Jika nilai tidak dikenali encoder, gunakan nilai paling umum
             try:
                 nilai = encoders[kol].transform([str(nilai)])[0]
@@ -916,7 +1087,7 @@ if __name__ == '__main__':
     model_nb, model_dt, scaler, metrics, comparison_summary = latih_dan_evaluasi(X, y, nama_fitur, le_y)
 
     # Langkah 5: Contoh prediksi individu baru
-    prediksi_baru(model_nb, model_dt, scaler, le_y, encoders)
+    prediksi_baru(model_nb, model_dt, scaler, le_y, encoders, nama_fitur)
 
     # Langkah 6: Simpan model dan artefak ke file .pkl
     export_model_artifacts(model_nb, model_dt, scaler, le_y, encoders, nama_fitur, metrics, comparison_summary)

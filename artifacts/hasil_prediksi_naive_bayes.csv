@@ -1,0 +1,31 @@
+JENIS USAHA/PEKERJAAN,KEPEMILIKAN ASET,LUAS TEMPAT TINGGAL,JENIS DINDING,JENIS LANTAI,PENDIDIKAN,KATEGORI_TOTAL_PENDAPATAN,KATEGORI_PENDAPATAN_PER_KAPITA,KATEGORI_TANGGUNGAN,KATEGORI_RIWAYAT,AKTUAL,PREDIKSI,PROBABILITAS_TIDAK_LAYAK,PROBABILITAS_LAYAK
+Wiraswasta,Ada,Sedang,Tembok/Beton,Keramik,Diploma IV/Strata I,Tinggi,Tinggi,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,3.992993908618375e-09,0.9999999960070056
+IRT,Tidak ada,Kecil,Bilik Bambu/Kayu,Tanah,SLTA/Sederajat,Sangat Rendah,Sangat Rendah,Tinggi,2 Kali,LAYAK,LAYAK,0.9999999999691394,3.0860219990446266e-11
+Berdagang,Ada,Kecil,Tembok,Semen,Pelajar/Mahasiswa,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,2.0272300998708033e-07,0.9999997972769893
+IRT,Tidak ada,Kecil,Bilik Bambu/Kayu,Semen,SLTA/Sederajat,Rendah,Sangat Rendah,Tinggi,2 Kali,LAYAK,LAYAK,0.9999999998408011,1.5919954754933122e-10
+Pegawai Negeri Sipil,Ada,Besar,Tembok,Semen,Pelajar/Mahasiswa,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,1.4013114128246485e-10,0.9999999998598685
+Petani,Tidak ada,Kecil,Semi,Semen,Belum Tamat SD,Rendah,Sangat Rendah,Tinggi,3 Kali atau Lebih,LAYAK,LAYAK,0.9999999999035936,9.640581136060179e-11
+Berdagang,Ada,Besar,Tembok/Beton,Keramik,Pelajar/Mahasiswa,Tinggi,Tinggi,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,3.240690720333749e-10,0.9999999996759303
+Transportasi,Ada,Sedang,Tembok,Semen,SLTP/Sederajat,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,LAYAK,0.998832838679711,0.001167161320289331
+IRT,Tidak ada,Kecil,Bilik Bambu/Kayu,Semen,Belum Tamat SD,Rendah,Sangat Rendah,Tinggi,3 Kali atau Lebih,LAYAK,LAYAK,0.9999999999875957,1.2405159551119539e-11
+Wiraswasta,Ada,Besar,Tembok/Beton,Semen,Diploma I,Tinggi,Sedang,Sedang,1 Kali,TIDAK LAYAK,TIDAK LAYAK,4.601474337225583e-09,0.9999999953985252
+Karyawan Swasta,Ada,Sedang,Tembok,Semen,Diploma I,Tinggi,Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,1.9967878297000278e-07,0.9999998003212167
+Transportasi,Tidak ada,Sedang,Semi,Semen,Belum Tamat SD,Rendah,Sangat Rendah,Tinggi,Belum Pernah,LAYAK,LAYAK,0.99999996844195,3.1558049536564776e-08
+Nelayan,Tidak ada,Kecil,Semi,Tanah,Belum Tamat SD,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,LAYAK,0.9999999981411154,1.8588849860482664e-09
+Karyawan Swasta,Ada,Besar,Tembok/Beton,Keramik,Pelajar/Mahasiswa,Sedang,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,4.62955817126237e-10,0.9999999995370441
+Berdagang,Tidak ada,Sedang,Semi,Keramik,Tamat SD,Rendah,Sangat Rendah,Sedang,1 Kali,LAYAK,LAYAK,0.9999971813725534,2.8186274470100506e-06
+Wiraswasta,Ada,Besar,Tembok/Beton,Keramik,Diploma I,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,2.3147790866492287e-11,0.9999999999768523
+Nelayan,Tidak ada,Sangat kecil,Semi,Tanah,SLTA/Sederajat,Rendah,Sangat Rendah,Tinggi,1 Kali,LAYAK,LAYAK,0.9999999995869633,4.130371029523741e-10
+Transportasi,Ada,Besar,Tembok/Beton,Keramik,SLTA/Sederajat,Sedang,Sangat Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,0.00040474365968257213,0.9995952563403173
+Berdagang,Ada,Besar,Tembok,Keramik,Pelajar/Mahasiswa,Tinggi,Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,6.568684490174826e-09,0.9999999934313148
+Lain-lain,Tidak ada,Kecil,Tembok,Tanah,SLTP/Sederajat,Rendah,Sangat Rendah,Tinggi,1 Kali,LAYAK,LAYAK,0.9999999997896243,2.1037543448357303e-10
+Wiraswasta,Ada,Sedang,Tembok/Beton,Semen,Diploma I,Sedang,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,1.563689683987371e-07,0.9999998436310322
+Transportasi,Tidak ada,Sangat kecil,Semi,Semen,Belum Tamat SD,Rendah,Sangat Rendah,Sedang,1 Kali,LAYAK,LAYAK,0.9999998584409397,1.4155905984953964e-07
+Karyawan Swasta,Ada,Sedang,Tembok,Semen,Diploma I,Tinggi,Tinggi,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,2.6321298681767376e-08,0.9999999736787014
+Wiraswasta,Ada,Besar,Tembok/Beton,Semen,SLTA/Sederajat,Tinggi,Rendah,Sedang,1 Kali,TIDAK LAYAK,TIDAK LAYAK,9.663095218884075e-08,0.9999999033690472
+Bekerja,Ada,Besar,Tembok/Beton,Keramik,Diploma I,Tinggi,Sedang,Sedang,1 Kali,TIDAK LAYAK,TIDAK LAYAK,4.476264151739141e-09,0.9999999955237353
+IRT,Tidak ada,Kecil,Tembok,Semen,SLTA/Sederajat,Rendah,Sangat Rendah,Sedang,Belum Pernah,LAYAK,LAYAK,0.9999987050531765,1.2949468238974526e-06
+Berdagang,Ada,Sedang,Tembok,Semen,Diploma I,Tinggi,Tinggi,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK,1.754752983722679e-07,0.9999998245247012
+Lain-lain,Tidak ada,Kecil,Bilik Bambu/Kayu,Keramik,Belum Tamat SD,Rendah,Sangat Rendah,Sedang,Belum Pernah,LAYAK,LAYAK,0.999999950921857,4.9078143157840137e-08
+Berdagang,Tidak ada,Sedang,Bilik Bambu/Kayu,Tanah,Belum Tamat SD,Rendah,Sangat Rendah,Tinggi,Belum Pernah,LAYAK,LAYAK,0.999999998805194,1.1948059982995651e-09
+Tukang Kayu,Tidak ada,Sedang,Semi,Semen,SLTP/Sederajat,Sangat Rendah,Sangat Rendah,Tinggi,Belum Pernah,LAYAK,LAYAK,0.9999999987602202,1.239780555095913e-09

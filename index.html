@@ -182,7 +182,56 @@
                         </div>
 
                         <div id="result" class="hidden rounded-lg border bg-white p-4 shadow-sm transition-all">
-                            <pre id="output" class="whitespace-pre-wrap break-words text-xs font-mono text-zinc-800 bg-zinc-50 p-3 rounded border border-zinc-100 max-h-96 overflow-y-auto"></pre>
+                            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 pb-4">
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-widest text-zinc-500">Prediksi Naive Bayes</p>
+                                    <h5 id="resultTitle" class="mt-1 text-2xl font-extrabold tracking-tight text-zinc-900">-</h5>
+                                </div>
+                                <span id="resultBadge" class="rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700">
+                                    -
+                                </span>
+                            </div>
+
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Algoritma</div>
+                                    <div id="resultAlgorithm" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
+                                </div>
+                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Confidence</div>
+                                    <div id="resultConfidence" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
+                                </div>
+                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Akurasi Model</div>
+                                    <div id="resultAccuracy" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
+                                </div>
+                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Status</div>
+                                    <div id="resultStatus" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
+                                </div>
+                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Kelayakan</div>
+                                    <div id="resultKelayakan" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
+                                </div>
+                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3 sm:col-span-2">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Total Pendapatan</div>
+                                    <div id="resultIncome" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
+                                </div>
+                            </div>
+
+                            <div class="mt-5">
+                                <div class="flex items-center justify-between gap-3">
+                                    <h6 class="text-xs font-bold uppercase tracking-widest text-zinc-500">Probabilitas per Kelas</h6>
+                                    <span class="text-[11px] text-zinc-400">Naive Bayes</span>
+                                </div>
+                                <div id="resultProbabilities" class="mt-3 space-y-3"></div>
+                            </div>
+
+                            <div class="mt-5 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                                <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Kesimpulan</div>
+                                <p id="resultSummary" class="mt-1 text-sm leading-6 text-zinc-700">-</p>
+                            </div>
+                            <div id="resultError" class="mt-4 hidden rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
                         </div>
                     </div>
 
@@ -311,6 +360,25 @@
                 : "-";
         }
 
+        function formatRupiah(value) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return "-";
+            return new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+                maximumFractionDigits: 0,
+            }).format(number);
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
         function getComparisonData(payload) {
             return payload?.data || payload?.analisis_perbandingan || payload || null;
         }
@@ -318,25 +386,140 @@
         function setResult(title, payload, isError = false) {
             const resultBox = document.getElementById("result");
             const placeholder = document.getElementById("placeholder-result");
-            const output = document.getElementById("output");
 
             if (placeholder) placeholder.classList.add("hidden");
             resultBox.classList.remove("hidden");
-            
+
             resultBox.className = "rounded-lg border p-4 shadow-sm transition-all " + 
                 (isError ? "border-red-200 bg-red-50/50" : "border-zinc-200 bg-white");
 
-            output.textContent = `${title}\n\n${payload}`;
+            if (isError) {
+                const resultTitle = document.getElementById("resultTitle");
+                const resultBadge = document.getElementById("resultBadge");
+                const resultAlgorithm = document.getElementById("resultAlgorithm");
+                const resultConfidence = document.getElementById("resultConfidence");
+                const resultAccuracy = document.getElementById("resultAccuracy");
+                const resultStatus = document.getElementById("resultStatus");
+                const resultKelayakan = document.getElementById("resultKelayakan");
+                const resultIncome = document.getElementById("resultIncome");
+                const resultProbabilities = document.getElementById("resultProbabilities");
+                const resultSummary = document.getElementById("resultSummary");
+                const resultError = document.getElementById("resultError");
+
+                resultTitle.textContent = title;
+                resultBadge.textContent = "Error";
+                resultBadge.className = "rounded-full border border-red-200 bg-red-100 px-3 py-1 text-xs font-semibold text-red-700";
+                resultAlgorithm.textContent = "-";
+                resultConfidence.textContent = "-";
+                resultAccuracy.textContent = "-";
+                resultStatus.textContent = "-";
+                resultKelayakan.textContent = "-";
+                resultIncome.textContent = "-";
+                resultProbabilities.innerHTML = "";
+                resultSummary.textContent = "-";
+                resultError.textContent = payload;
+                resultError.classList.remove("hidden");
+                return;
+            }
+
+            renderPredictionResult(payload);
         }
 
         function clearResult() {
             const resultBox = document.getElementById("result");
             const placeholder = document.getElementById("placeholder-result");
-            const output = document.getElementById("output");
+            const resultTitle = document.getElementById("resultTitle");
+            const resultBadge = document.getElementById("resultBadge");
+            const resultAlgorithm = document.getElementById("resultAlgorithm");
+            const resultConfidence = document.getElementById("resultConfidence");
+            const resultAccuracy = document.getElementById("resultAccuracy");
+            const resultStatus = document.getElementById("resultStatus");
+            const resultKelayakan = document.getElementById("resultKelayakan");
+            const resultIncome = document.getElementById("resultIncome");
+            const resultProbabilities = document.getElementById("resultProbabilities");
+            const resultSummary = document.getElementById("resultSummary");
+            const resultError = document.getElementById("resultError");
 
             if (placeholder) placeholder.classList.remove("hidden");
             resultBox.classList.add("hidden");
-            output.textContent = "";
+            resultTitle.textContent = "-";
+            resultBadge.textContent = "-";
+            resultAlgorithm.textContent = "-";
+            resultConfidence.textContent = "-";
+            resultAccuracy.textContent = "-";
+            resultStatus.textContent = "-";
+            resultKelayakan.textContent = "-";
+            resultIncome.textContent = "-";
+            resultProbabilities.innerHTML = "";
+            resultSummary.textContent = "-";
+            resultError.textContent = "";
+            resultError.classList.add("hidden");
+        }
+
+        function renderPredictionResult(payload) {
+            const resultTitle = document.getElementById("resultTitle");
+            const resultBadge = document.getElementById("resultBadge");
+            const resultAlgorithm = document.getElementById("resultAlgorithm");
+            const resultConfidence = document.getElementById("resultConfidence");
+            const resultAccuracy = document.getElementById("resultAccuracy");
+            const resultStatus = document.getElementById("resultStatus");
+            const resultKelayakan = document.getElementById("resultKelayakan");
+            const resultIncome = document.getElementById("resultIncome");
+            const resultProbabilities = document.getElementById("resultProbabilities");
+            const resultSummary = document.getElementById("resultSummary");
+            const resultError = document.getElementById("resultError");
+
+            const nb = payload?.prediksi_naive_bayes || payload?.algoritma_terbaik || {};
+            const probabilities = nb?.probabilitas && typeof nb.probabilitas === "object"
+                ? Object.entries(nb.probabilitas)
+                : [];
+
+            const kelayakanIsLayak = String(nb?.kelayakan || "").toLowerCase() === "layak";
+            const badgeClass = kelayakanIsLayak
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-amber-200 bg-amber-50 text-amber-700";
+
+            resultTitle.textContent = nb?.status || "Hasil Prediksi";
+            resultBadge.textContent = nb?.kelayakan || "-";
+            resultBadge.className = `rounded-full border px-3 py-1 text-xs font-semibold ${badgeClass}`;
+            resultAlgorithm.textContent = nb?.nama_algoritma || "Naive Bayes";
+            resultConfidence.textContent = formatPercent(nb?.confidence);
+            resultAccuracy.textContent = formatPercent(nb?.akurasi_model);
+            resultStatus.textContent = nb?.status || "-";
+            resultKelayakan.textContent = nb?.kelayakan || "-";
+            resultIncome.textContent = formatRupiah(payload?.total_pendapatan);
+            resultSummary.textContent = payload?.kesimpulan
+                ? `Prediksi Naive Bayes menyimpulkan ${payload.kesimpulan.toUpperCase()} sebagai status kelayakan.`
+                : "Kesimpulan tidak tersedia.";
+            resultError.textContent = "";
+            resultError.classList.add("hidden");
+
+            if (probabilities.length === 0) {
+                resultProbabilities.innerHTML = `
+                    <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-500">
+                        Probabilitas kelas belum tersedia dari backend.
+                    </div>
+                `;
+                return;
+            }
+
+            const sorted = probabilities.sort((a, b) => Number(b[1]) - Number(a[1]));
+            resultProbabilities.innerHTML = sorted.map(([label, prob]) => {
+                const value = Number(prob);
+                const percent = Number.isFinite(value) ? (value * 100).toFixed(2) : "-";
+                const width = Number.isFinite(value) ? Math.max(0, Math.min(100, value * 100)) : 0;
+                return `
+                    <div class="rounded-lg border border-zinc-200 bg-white p-3">
+                        <div class="flex items-center justify-between gap-3 text-sm">
+                            <span class="font-medium text-zinc-800">${escapeHtml(label)}</span>
+                            <span class="font-semibold text-zinc-900">${percent}%</span>
+                        </div>
+                        <div class="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
+                            <div class="h-full rounded-full bg-zinc-900" style="width: ${width}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
         }
 
         function applyComparisonTheme(cardElement, badgeElement, isWinner) {
@@ -527,22 +710,7 @@
                     return;
                 }
 
-                const best = result.algoritma_terbaik;
-                const accuracy = typeof best?.akurasi_model === "number" ? `${(best.akurasi_model * 100).toFixed(2)}%` : "Tidak tersedia";
-                const confidence = typeof best?.confidence === "number" ? `${(best.confidence * 100).toFixed(2)}%` : "Tidak tersedia";
-                const probabilities = best?.probabilitas ? JSON.stringify(best.probabilitas, null, 2) : "Tidak tersedia";
-
-                const lines = [
-                    `Algoritma Terpilih : ${best?.nama_algoritma || "Tidak tersedia"}`,
-                    `Akurasi Model      : ${accuracy}`,
-                    `Status             : ${best?.status || "Tidak tersedia"}`,
-                    `Kelayakan          : ${best?.kelayakan || "Tidak tersedia"}`,
-                    `Confidence         : ${confidence}`,
-                    `Probabilitas Kelas :\n${probabilities}`,
-                    `Kesimpulan         : ${result.kesimpulan || "Tidak tersedia"}`
-                ];
-
-                setResult("✅ PREDIKSI BERHASIL", lines.join("\n"), false);
+                setResult("✅ PREDIKSI NAIVE BAYES", result, false);
 
                 if (result.analisis_perbandingan) {
                     renderComparison(result.analisis_perbandingan);
