@@ -6,19 +6,74 @@ from typing import Any
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import CategoricalNB
+from sklearn.preprocessing import OrdinalEncoder
 
 
 BASE_DIR = Path(__file__).resolve().parent
-ARTIFACT_PATH = BASE_DIR / "artifacts" / "model_bundle.pkl"
+DATASET_PATH = BASE_DIR / "datasets" / "baznas-4.csv"
+ARTIFACT_PATH = BASE_DIR / "artifacts" / "model_naive_bayes_baznas.pkl"
+
+TARGET = "KELAS TARGET"
+RANDOM_STATE = 42
+
+FEATURES = [
+    "JENIS USAHA/PEKERJAAN",
+    "KEPEMILIKAN ASET",
+    "LUAS TEMPAT TINGGAL",
+    "JENIS DINDING",
+    "JENIS LANTAI",
+    "PENDIDIKAN",
+    "KATEGORI_TOTAL_PENDAPATAN",
+    "KATEGORI_PENDAPATAN_PER_KAPITA",
+    "KATEGORI_TANGGUNGAN",
+    "KATEGORI_RIWAYAT",
+]
+
+RAW_CATEGORICAL_FEATURES = [
+    "JENIS USAHA/PEKERJAAN",
+    "KEPEMILIKAN ASET",
+    "LUAS TEMPAT TINGGAL",
+    "JENIS DINDING",
+    "JENIS LANTAI",
+    "PENDIDIKAN",
+]
+
+INPUT_PAYLOAD_FIELDS = [
+    *RAW_CATEGORICAL_FEATURES,
+    "TOTAL_PENDAPATAN",
+    "JUMLAH TANGGUNGAN",
+    "RIWAYAT",
+]
+
+RAW_FIELD_ALIASES = {
+    "JENIS USAHA/PEKERJAAN": ["jenis_usaha_pekerjaan", "JENIS USAHA/PEKERJAAN"],
+    "KEPEMILIKAN ASET": ["kepemilikan_aset", "KEPEMILIKAN ASET"],
+    "LUAS TEMPAT TINGGAL": ["luas_tempat_tinggal", "LUAS TEMPAT TINGGAL"],
+    "JENIS DINDING": ["jenis_dinding", "JENIS DINDING"],
+    "JENIS LANTAI": ["jenis_lantai", "JENIS LANTAI"],
+    "PENDIDIKAN": ["pendidikan", "PENDIDIKAN"],
+}
+
+TANGGUNGAN_NUMBER_ALIASES = ["jumlah_tanggungan", "JUMLAH TANGGUNGAN"]
+TOTAL_PENDAPATAN_ALIASES = ["total_pendapatan", "TOTAL_PENDAPATAN", "TOTAL PENDAPATAN"]
+RIWAYAT_ALIASES = ["riwayat", "RIWAYAT", "RIWAYAT PENERIMAAN BANTUAN"]
+RIWAYAT_MAPPING = {
+    0: "Belum Pernah",
+    1: "1 Kali",
+    2: "2 Kali",
+    3: "3 Kali atau Lebih",
+}
 
 
 app = FastAPI(
-    title="Mustahik Classification API",
-    description="Naive Bayes & C4.5 Classification",
-    version="2.0",
+    title="Klasifikasi Mustahik BAZNAS",
+    description="Prediksi KELAS TARGET menggunakan fitur dengan riwayat dari main.ipynb.",
+    version="3.0",
 )
 
 cors_origins = [
@@ -36,354 +91,349 @@ app.add_middleware(
 )
 
 
-def _load_bundle() -> dict[str, Any]:
-    if not ARTIFACT_PATH.exists():
-        raise RuntimeError(
-            f"Model bundle not found: {ARTIFACT_PATH}. "
-            "Jalankan `python main.py` terlebih dahulu untuk mengekspor model."
+def kategori_pendapatan(nilai: float) -> str:
+    if nilai <= 850_000:
+        return "Sangat Rendah"
+    if nilai <= 1_700_000:
+        return "Rendah"
+    if nilai <= 3_400_000:
+        return "Sedang"
+    return "Tinggi"
+
+
+def _parse_total_pendapatan(value: Any) -> float:
+    if isinstance(value, bool):
+        raise HTTPException(
+            status_code=422,
+            detail="TOTAL_PENDAPATAN harus berupa angka, bukan boolean.",
         )
-    bundle = joblib.load(ARTIFACT_PATH)
-    required_keys = {
-        "model_nb",
-        "model_dt",
-        "scaler",
-        "label_encoder_y",
-        "feature_encoders",
-        "feature_names",
-    }
-    missing = required_keys.difference(bundle.keys())
-    if missing:
-        raise RuntimeError(f"Model bundle tidak lengkap. Missing keys: {sorted(missing)}")
-    return bundle
 
+    if isinstance(value, str):
+        normalized_value = value.strip().replace(".", "").replace(",", "")
+    else:
+        normalized_value = value
 
-bundle = _load_bundle()
-nb_model = bundle["model_nb"]
-dt_model = bundle["model_dt"]
-scaler = bundle["scaler"]
-le_y = bundle["label_encoder_y"]
-feature_encoders = bundle["feature_encoders"]
-feature_names = bundle["feature_names"]
-metrics = bundle.get("metrics", {})
-comparison_summary = bundle.get("comparison_summary", {})
-selection_metric = metrics.get("selection_metric", "cv_mean")
-
-
-def _model_score(key: str) -> float:
-    model_metrics = metrics.get(key, {})
-    value = model_metrics.get(selection_metric)
-    if value is None:
-        value = model_metrics.get("accuracy_test", 0.0)
     try:
-        return float(value)
-    except (TypeError, ValueError):
-        return 0.0
+        total_pendapatan = float(normalized_value)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="TOTAL_PENDAPATAN harus berupa angka.",
+        ) from exc
 
-
-BEST_ALGORITHM_KEY = metrics.get("best_algorithm")
-if BEST_ALGORITHM_KEY not in {"naive_bayes", "decision_tree"}:
-    BEST_ALGORITHM_KEY = max(
-        ("naive_bayes", "decision_tree"),
-        key=_model_score,
-    )
-
-ALGORITHM_LABELS = {
-    "naive_bayes": "Naive Bayes",
-    "decision_tree": "Decision Tree C4.5",
-}
-
-
-def _build_comparison_summary() -> dict[str, Any]:
-    summary = comparison_summary if isinstance(comparison_summary, dict) else {}
-    if summary.get("rows"):
-        return summary
-
-    rows = []
-    for key, label in [
-        ("naive_bayes", "Naive Bayes"),
-        ("decision_tree", "Decision Tree C4.5"),
-    ]:
-        model_metrics = metrics.get(key, {})
-        selection_score = float(model_metrics.get(selection_metric, model_metrics.get("accuracy_test", 0.0)))
-        rows.append(
-            {
-                "key": key,
-                "nama_algoritma": label,
-                "akurasi_test": float(model_metrics.get("accuracy_test", 0.0)),
-                "cv_mean": float(model_metrics.get("cv_mean", 0.0)),
-                "cv_std": float(model_metrics.get("cv_std", 0.0)),
-                "selection_score": selection_score,
-            }
+    if total_pendapatan < 0:
+        raise HTTPException(
+            status_code=422,
+            detail="TOTAL_PENDAPATAN tidak boleh negatif.",
         )
 
-    rows.sort(key=lambda item: item["selection_score"], reverse=True)
-    winner = rows[0] if rows else {}
-    runner_up = rows[1] if len(rows) > 1 else {}
-    score_gap = float(winner.get("selection_score", 0.0) - runner_up.get("selection_score", 0.0)) if runner_up else 0.0
+    return total_pendapatan
 
-    selection_label = "Cross-Validation Mean" if selection_metric == "cv_mean" else selection_metric.replace("_", " ").title()
-    summary_text = (
-        f"{winner['nama_algoritma']} unggul berdasarkan {selection_label} dengan selisih {score_gap:.4f}."
-        if winner
-        else "Ringkasan perbandingan belum tersedia."
-    )
 
-    return {
-        "selection_metric": selection_metric,
-        "selection_label": selection_label,
-        "winner_key": winner.get("key"),
-        "winner_label": winner.get("nama_algoritma"),
-        "runner_up_key": runner_up.get("key"),
-        "score_gap": score_gap,
-        "rows": rows,
-        "summary": summary_text,
-        "recommendation": (
-            f"Gunakan {winner['nama_algoritma']} sebagai model utama."
-            if winner
-            else "Gunakan model dengan performa terbaik yang tersedia."
-        ),
+def kategori_tanggungan(nilai: int) -> str:
+    if nilai <= 1:
+        return "Rendah"
+    if nilai <= 4:
+        return "Sedang"
+    return "Tinggi"
+
+
+def kategori_riwayat(nilai: int) -> str:
+    return RIWAYAT_MAPPING[nilai]
+
+
+def _parse_jumlah_tanggungan(value: Any) -> int:
+    if isinstance(value, bool):
+        raise HTTPException(
+            status_code=422,
+            detail="JUMLAH TANGGUNGAN harus berupa angka, bukan boolean.",
+        )
+
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="JUMLAH TANGGUNGAN harus berupa angka.",
+        ) from exc
+
+    if not number.is_integer():
+        raise HTTPException(
+            status_code=422,
+            detail="JUMLAH TANGGUNGAN harus berupa bilangan bulat.",
+        )
+
+    tanggungan = int(number)
+    if tanggungan < 0:
+        raise HTTPException(
+            status_code=422,
+            detail="JUMLAH TANGGUNGAN tidak boleh negatif.",
+        )
+
+    return tanggungan
+
+
+def _parse_riwayat(value: Any) -> int:
+    if isinstance(value, bool):
+        raise HTTPException(
+            status_code=422,
+            detail="RIWAYAT harus berupa angka, bukan boolean.",
+        )
+
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="RIWAYAT harus berupa angka.",
+        ) from exc
+
+    if not number.is_integer():
+        raise HTTPException(
+            status_code=422,
+            detail="RIWAYAT harus berupa bilangan bulat.",
+        )
+
+    riwayat = int(number)
+    if riwayat not in RIWAYAT_MAPPING:
+        raise HTTPException(
+            status_code=422,
+            detail="RIWAYAT harus berada pada skala 0 sampai 3.",
+        )
+
+    return riwayat
+
+
+def _prepare_dataset() -> pd.DataFrame:
+    if not DATASET_PATH.exists():
+        raise RuntimeError(f"Dataset tidak ditemukan: {DATASET_PATH}")
+
+    df = pd.read_csv(DATASET_PATH)
+    required_columns = {
+        "SUAMI",
+        "ISTRI",
+        "JUMLAH TANGGUNGAN",
+        "RIWAYAT",
+        TARGET,
+        *FEATURES[:6],
     }
+    missing = sorted(required_columns.difference(df.columns))
+    if missing:
+        raise RuntimeError(f"Kolom dataset tidak lengkap: {missing}")
 
-
-class MustahikRequest(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    nama: str | None = None
-    no_kk: str | None = None
-
-    total_pendapatan: float | None = Field(
-        default=None,
-        validation_alias=AliasChoices("total_pendapatan", "TOTAL_PENDAPATAN", "total_penghasilan"),
+    df["TOTAL_PENDAPATAN"] = df["SUAMI"] + df["ISTRI"]
+    df["PENDAPATAN_PER_KAPITA"] = df["TOTAL_PENDAPATAN"] / (
+        df["JUMLAH TANGGUNGAN"] + 1
     )
-    suami: float | None = None
-    istri: float | None = None
-
-    jumlah_tanggungan: int = 0
-    jenis_usaha_pekerjaan: str
-    kepemilikan_aset: Any = "tidak ada"
-    luas_tempat_tinggal: str
-    jenis_dinding: str
-    jenis_lantai: str
+    df["KATEGORI_TOTAL_PENDAPATAN"] = df["TOTAL_PENDAPATAN"].apply(kategori_pendapatan)
+    df["KATEGORI_PENDAPATAN_PER_KAPITA"] = df["PENDAPATAN_PER_KAPITA"].apply(
+        kategori_pendapatan
+    )
+    df["KATEGORI_TANGGUNGAN"] = df["JUMLAH TANGGUNGAN"].apply(kategori_tanggungan)
+    df["RIWAYAT"] = pd.to_numeric(df["RIWAYAT"], errors="coerce")
+    if df["RIWAYAT"].isna().any():
+        raise RuntimeError("Kolom RIWAYAT berisi nilai kosong atau bukan angka.")
+    df["RIWAYAT"] = df["RIWAYAT"].clip(0, 3).astype(int)
+    df["KATEGORI_RIWAYAT"] = df["RIWAYAT"].apply(kategori_riwayat)
+    return df
 
 
 def _normalize_text(value: Any) -> str:
     return " ".join(str(value).strip().split()).casefold()
 
 
-def _normalize_to_encoder_value(column: str, value: Any) -> str:
-    encoder = feature_encoders[column]
-    lookup = {_normalize_text(label): label for label in encoder.classes_}
-    normalized = lookup.get(_normalize_text(value))
-    if normalized is not None:
-        return normalized
-
-    # Toleransi untuk input lama atau typo ringan.
-    raw = _normalize_text(value)
-    if column == "JENIS USAHA/PEKERJAAN":
-        if any(token in raw for token in ["dagang", "wiraswasta", "usaha"]):
-            return "perdagangan"
-        if any(token in raw for token in ["petani", "nelayan", "tani"]):
-            return "pertanian"
-        if any(token in raw for token in ["tukang", "transportasi", "buruh", "bekerja"]):
-            return "jasa"
-        if "karyawan" in raw:
-            return "karyawan"
-        if any(token in raw for token in ["pns", "pegawai negeri"]):
-            return "pns"
-        if any(token in raw for token in ["irt", "urt", "ibu rumah"]):
-            return "irt"
-        return "lainnya"
-
-    if column == "LUAS TEMPAT TINGGAL":
-        if "sangat kecil" in raw:
-            return "sangat kecil"
-        if "kecil" in raw:
-            return "kecil"
-        if "besar" in raw:
-            return "besar"
-        return "sedang"
-
-    if column == "JENIS DINDING":
-        if any(token in raw for token in ["tembok", "beton"]):
-            return "tembok"
-        if "semi" in raw:
-            return "semi"
-        return "bilik"
-
-    if column == "JENIS LANTAI":
-        if any(token in raw for token in ["keramik", "kermaik"]):
-            return "keramik"
-        if "panggung" in raw:
-            return "panggung"
-        if "tanah" in raw:
-            return "tanah"
-        return "semen"
-
-    allowed = ", ".join(map(str, encoder.classes_))
-    raise HTTPException(
-        status_code=422,
-        detail=f"Nilai '{value}' untuk '{column}' tidak dikenali. Pilihan yang tersedia: {allowed}",
-    )
-
-
-def _as_asset_flag(value: Any) -> int:
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, (int, float)):
-        return 0 if int(value) == 0 else 1
-    text = _normalize_text(value)
-    if text in {"0", "tidak ada", "tidak", "false", "no"}:
-        return 0
-    return 1
-
-
-def _family_members(jumlah_tanggungan: int) -> int:
-    return max(1, int(jumlah_tanggungan)) + 1
-
-
-def _basic_needs(jumlah_tanggungan: int, jenis_lantai: str, jenis_dinding: str, luas_tempat: str) -> float:
-    anggota = _family_members(jumlah_tanggungan)
-    biaya_tempat = {
-        "sangat kecil": 100_000,
-        "kecil": 150_000,
-        "sedang": 250_000,
-        "besar": 400_000,
-    }.get(luas_tempat, 200_000)
-    faktor_dinding = {
-        "tembok": 0,
-        "semi": 50_000,
-        "bilik": 100_000,
-        "bambu": 150_000,
-        "lainnya": 75_000,
-    }.get(jenis_dinding, 75_000)
-    return float((anggota * 500_000) + biaya_tempat + faktor_dinding)
-
-
-def _house_score(luas_tempat: str, jenis_dinding: str, jenis_lantai: str) -> int:
-    return (
-        {"sangat kecil": 0, "kecil": 1, "sedang": 2, "besar": 3}.get(luas_tempat, 2)
-        + {"bambu": 0, "bilik": 1, "semi": 2, "tembok": 3, "lainnya": 1}.get(jenis_dinding, 1)
-        + {"tanah": 0, "panggung": 1, "semen": 2, "keramik": 3, "lainnya": 1}.get(jenis_lantai, 1)
-    )
-
-
-def _economic_ability_score(
-    total_pendapatan: float,
-    jumlah_tanggungan: int,
-    kepemilikan_aset: int,
-    jenis_lantai: str,
-    jenis_dinding: str,
-    luas_tempat: str,
-) -> int:
-    kebutuhan = _basic_needs(jumlah_tanggungan, jenis_lantai, jenis_dinding, luas_tempat)
-    anggota = _family_members(jumlah_tanggungan)
-    pendapatan_per_anggota = total_pendapatan / anggota if anggota > 0 else 0
-    rasio = total_pendapatan / kebutuhan if kebutuhan > 0 else 0
-    skor_rumah = _house_score(luas_tempat, jenis_dinding, jenis_lantai)
-
-    score = 0
-    if rasio >= 1.25:
-        score += 2
-    elif rasio >= 1.0:
-        score += 1
-    if pendapatan_per_anggota >= 1_000_000:
-        score += 2
-    elif pendapatan_per_anggota >= 750_000:
-        score += 1
-    if int(kepemilikan_aset) == 1:
-        score += 1
-    if jumlah_tanggungan <= 2 and total_pendapatan >= 2_000_000:
-        score += 1
-    if skor_rumah >= 8:
-        score += 2
-    elif skor_rumah >= 6:
-        score += 1
-    return score
-
-
-def _build_input_frame(data: MustahikRequest) -> pd.DataFrame:
-    total_pendapatan = data.total_pendapatan
-    if total_pendapatan is None:
-        if data.suami is None and data.istri is None:
-            raise HTTPException(
-                status_code=422,
-                detail="total_pendapatan wajib diisi, atau isi suami dan istri untuk dihitung otomatis.",
-            )
-        total_pendapatan = float(data.suami or 0) + float(data.istri or 0)
-
-    jumlah_tanggungan = int(data.jumlah_tanggungan)
-    jenis_usaha = _normalize_to_encoder_value("JENIS USAHA/PEKERJAAN", data.jenis_usaha_pekerjaan)
-    kepemilikan_aset = _as_asset_flag(data.kepemilikan_aset)
-    luas_tempat = _normalize_to_encoder_value("LUAS TEMPAT TINGGAL", data.luas_tempat_tinggal)
-    jenis_dinding = _normalize_to_encoder_value("JENIS DINDING", data.jenis_dinding)
-    jenis_lantai = _normalize_to_encoder_value("JENIS LANTAI", data.jenis_lantai)
-    jumlah_anggota = _family_members(jumlah_tanggungan)
-    kebutuhan_dasar = _basic_needs(jumlah_tanggungan, jenis_lantai, jenis_dinding, luas_tempat)
-
-    values = {
-        "TOTAL_PENDAPATAN": float(total_pendapatan),
-        "JUMLAH TANGGUNGAN": jumlah_tanggungan,
-        "JENIS USAHA/PEKERJAAN": jenis_usaha,
-        "KEPEMILIKAN ASET": kepemilikan_aset,
-        "LUAS TEMPAT TINGGAL": luas_tempat,
-        "JENIS DINDING": jenis_dinding,
-        "JENIS LANTAI": jenis_lantai,
-        "JUMLAH_ANGGOTA_KELUARGA": jumlah_anggota,
-        "KEBUTUHAN_DASAR": kebutuhan_dasar,
-        "PENDAPATAN_PER_ANGGOTA": float(total_pendapatan) / jumlah_anggota,
-        "RASIO_PENDAPATAN_KEBUTUHAN": float(total_pendapatan) / kebutuhan_dasar if kebutuhan_dasar > 0 else 0.0,
-        "SKOR_KONDISI_RUMAH": _house_score(luas_tempat, jenis_dinding, jenis_lantai),
-        "SKOR_KEMAMPUAN_EKONOMI": _economic_ability_score(
-            float(total_pendapatan),
-            jumlah_tanggungan,
-            kepemilikan_aset,
-            jenis_lantai,
-            jenis_dinding,
-            luas_tempat,
-        ),
+def _build_options(df: pd.DataFrame) -> dict[str, list[str]]:
+    preferred_order = {
+        "KATEGORI_TOTAL_PENDAPATAN": ["Sangat Rendah", "Rendah", "Sedang", "Tinggi"],
+        "KATEGORI_PENDAPATAN_PER_KAPITA": [
+            "Sangat Rendah",
+            "Rendah",
+            "Sedang",
+            "Tinggi",
+        ],
+        "KATEGORI_TANGGUNGAN": ["Rendah", "Sedang", "Tinggi"],
+        "KATEGORI_RIWAYAT": [
+            "Belum Pernah",
+            "1 Kali",
+            "2 Kali",
+            "3 Kali atau Lebih",
+        ],
     }
 
-    missing_features = [name for name in feature_names if name not in values]
-    if missing_features:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Fitur model belum didukung backend: {missing_features}",
+    options: dict[str, list[str]] = {}
+    for column in FEATURES:
+        values = df[column].fillna("Tidak Diketahui").astype(str).drop_duplicates().tolist()
+        if column in preferred_order:
+            order = preferred_order[column]
+            options[column] = [value for value in order if value in values]
+        else:
+            options[column] = sorted(values)
+    return options
+
+
+def _encode(encoder: OrdinalEncoder, frame: pd.DataFrame):
+    return encoder.transform(frame.fillna("Tidak Diketahui").astype(str)).astype(int) + 1
+
+
+def _train_model(df: pd.DataFrame) -> dict[str, Any]:
+    X = df[FEATURES].fillna("Tidak Diketahui").astype(str)
+    y = df[TARGET].astype(str)
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.20,
+        stratify=y,
+        random_state=RANDOM_STATE,
+    )
+
+    encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
+    X_train_encoded = _encode(encoder.fit(X_train), X_train)
+    X_test_encoded = _encode(encoder, X_test)
+
+    model = CategoricalNB(alpha=1.0)
+    model.fit(X_train_encoded, y_train)
+
+    accuracy = accuracy_score(y_test, model.predict(X_test_encoded))
+    return {
+        "model": model,
+        "encoder": encoder,
+        "fitur": FEATURES,
+        "target": TARGET,
+        "accuracy_test": float(accuracy),
+        "source": "trained_from_dataset",
+    }
+
+
+def _load_model(df: pd.DataFrame) -> dict[str, Any]:
+    if ARTIFACT_PATH.exists():
+        artifact = joblib.load(ARTIFACT_PATH)
+        if isinstance(artifact, dict) and artifact.get("fitur") == FEATURES:
+            artifact.setdefault("accuracy_test", None)
+            artifact.setdefault("source", str(ARTIFACT_PATH.relative_to(BASE_DIR)))
+            return artifact
+
+    return _train_model(df)
+
+
+dataset = _prepare_dataset()
+options = _build_options(dataset)
+option_lookup = {
+    column: {_normalize_text(value): value for value in values}
+    for column, values in options.items()
+}
+artifact = _load_model(dataset)
+model: CategoricalNB = artifact["model"]
+encoder: OrdinalEncoder = artifact["encoder"]
+
+
+def _get_payload_value(payload: dict[str, Any], feature: str) -> Any:
+    for alias in RAW_FIELD_ALIASES[feature]:
+        if alias in payload:
+            return payload[alias]
+    raise HTTPException(
+        status_code=422,
+        detail=f"Field '{feature}' wajib diisi.",
+    )
+
+
+def _get_required_numeric_payload(payload: dict[str, Any], aliases: list[str], label: str) -> Any:
+    for alias in aliases:
+        if alias in payload:
+            value = payload[alias]
+            if value is None or _normalize_text(value) == "":
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"{label} tidak boleh kosong.",
+                )
+            return value
+
+    raise HTTPException(status_code=422, detail=f"Field '{label}' wajib diisi.")
+
+
+def _validate_payload(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict) or not payload:
+        raise HTTPException(status_code=422, detail="Payload JSON tidak boleh kosong.")
+
+    total_pendapatan = _parse_total_pendapatan(
+        _get_required_numeric_payload(
+            payload,
+            TOTAL_PENDAPATAN_ALIASES,
+            "TOTAL_PENDAPATAN",
         )
+    )
+    jumlah_tanggungan = _parse_jumlah_tanggungan(
+        _get_required_numeric_payload(
+            payload,
+            TANGGUNGAN_NUMBER_ALIASES,
+            "JUMLAH TANGGUNGAN",
+        )
+    )
+    riwayat = _parse_riwayat(
+        _get_required_numeric_payload(
+            payload,
+            RIWAYAT_ALIASES,
+            "RIWAYAT",
+        )
+    )
+    pendapatan_per_kapita = total_pendapatan / (jumlah_tanggungan + 1)
 
-    frame = pd.DataFrame([{name: values[name] for name in feature_names}])
+    cleaned: dict[str, str] = {}
+    cleaned["KATEGORI_TOTAL_PENDAPATAN"] = kategori_pendapatan(total_pendapatan)
+    cleaned["KATEGORI_PENDAPATAN_PER_KAPITA"] = kategori_pendapatan(
+        pendapatan_per_kapita
+    )
+    cleaned["KATEGORI_TANGGUNGAN"] = kategori_tanggungan(jumlah_tanggungan)
+    cleaned["KATEGORI_RIWAYAT"] = kategori_riwayat(riwayat)
 
-    for column, encoder in feature_encoders.items():
-        frame[column] = encoder.transform(frame[column].astype(str))
+    for feature in RAW_CATEGORICAL_FEATURES:
+        value = _get_payload_value(payload, feature)
+        if value is None or _normalize_text(value) == "":
+            raise HTTPException(
+                status_code=422,
+                detail=f"Field '{feature}' tidak boleh kosong.",
+            )
 
-    return frame
+        normalized = option_lookup[feature].get(_normalize_text(value))
+        if normalized is None:
+            allowed = ", ".join(options[feature])
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Nilai '{value}' untuk '{feature}' tidak dikenal. "
+                    f"Pilihan yang tersedia: {allowed}"
+                ),
+            )
+
+        cleaned[feature] = normalized
+
+    return {
+        "features": cleaned,
+        "derived_values": {
+            "TOTAL_PENDAPATAN": total_pendapatan,
+            "JUMLAH TANGGUNGAN": jumlah_tanggungan,
+            "RIWAYAT": riwayat,
+            "PENDAPATAN_PER_KAPITA": pendapatan_per_kapita,
+        },
+    }
 
 
-def _kelayakan(status: str) -> str:
-    return "Layak" if status in {"Fakir", "Miskin"} else "Tidak Layak"
+def _predict_one(input_features: dict[str, str]) -> dict[str, Any]:
+    frame = pd.DataFrame([{feature: input_features[feature] for feature in FEATURES}])
+    encoded = _encode(encoder, frame)
+    prediction = str(model.predict(encoded)[0])
 
-
-def _predict_with_algorithm(algorithm_key: str, input_array):
-    if algorithm_key == "naive_bayes":
-        scaled_input = scaler.transform(input_array)
-        raw_proba = nb_model.predict_proba(scaled_input)[0]
-        pred = le_y.inverse_transform(nb_model.predict(scaled_input))[0]
-    else:
-        raw_proba = dt_model.predict_proba(input_array)[0]
-        pred = le_y.inverse_transform(dt_model.predict(input_array))[0]
-
-    class_probabilities = {
-        str(label): float(prob)
-        for label, prob in zip(le_y.classes_, raw_proba)
+    probabilities = model.predict_proba(encoded)[0]
+    probability_by_class = {
+        str(label): float(probability)
+        for label, probability in zip(model.classes_, probabilities)
     }
 
     return {
-        "nama_algoritma": ALGORITHM_LABELS[algorithm_key],
-        "status": str(pred),
-        "kelayakan": _kelayakan(str(pred)),
-        "confidence": float(max(raw_proba)),
-        "probabilitas": class_probabilities,
-        "akurasi_model": _model_score(algorithm_key),
-        "metode_seleksi": selection_metric,
+        "prediksi": prediction,
+        "kelayakan": prediction,
+        "confidence": float(max(probabilities)),
+        "probabilitas": probability_by_class,
     }
 
 
@@ -391,8 +441,9 @@ def _predict_with_algorithm(algorithm_key: str, input_array):
 def home():
     return {
         "status": "API aktif",
-        "service": "Klasifikasi Mustahik",
-        "feature_names": feature_names,
+        "endpoint": "POST /predict",
+        "fitur": FEATURES,
+        "target": TARGET,
     }
 
 
@@ -401,45 +452,76 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/comparison")
-def comparison():
+@app.get("/metadata")
+def metadata():
     return {
-        "status": "ok",
-        "service": "Perbandingan Algoritma",
-        "data": _build_comparison_summary(),
+        "fitur": FEATURES,
+        "input_payload": INPUT_PAYLOAD_FIELDS,
+        "target": TARGET,
+        "pilihan": options,
+        "feature_engineering": {
+            "TOTAL_PENDAPATAN": "Dikirim sebagai angka dari frontend/API.",
+            "PENDAPATAN_PER_KAPITA": (
+                "Dihitung otomatis: TOTAL_PENDAPATAN / (JUMLAH TANGGUNGAN + 1)"
+            ),
+            "KATEGORI_TOTAL_PENDAPATAN": (
+                "Dibuat otomatis dari TOTAL_PENDAPATAN: Sangat Rendah jika <= 850000, "
+                "Rendah jika <= 1700000, Sedang jika <= 3400000, Tinggi jika > 3400000"
+            ),
+            "KATEGORI_PENDAPATAN_PER_KAPITA": (
+                "Dibuat otomatis dari PENDAPATAN_PER_KAPITA dengan skala kategori pendapatan yang sama"
+            ),
+            "KATEGORI_TANGGUNGAN": (
+                "Dibuat otomatis dari JUMLAH TANGGUNGAN: "
+                "Rendah jika <= 1, Sedang jika <= 4, Tinggi jika > 4"
+            ),
+            "RIWAYAT": "Dikirim sebagai angka skala 0 sampai 3 dari frontend/API.",
+            "KATEGORI_RIWAYAT": (
+                "Dibuat otomatis dari RIWAYAT: 0 Belum Pernah, 1 1 Kali, "
+                "2 2 Kali, 3 3 Kali atau Lebih"
+            ),
+        },
+        "model": {
+            "nama": "Categorical Naive Bayes",
+            "source": artifact.get("source"),
+            "accuracy_test": artifact.get("accuracy_test"),
+        },
     }
 
 
 @app.post("/predict")
-def predict(data: MustahikRequest):
+def predict(payload: dict[str, Any] = Body(...)):
     try:
-        input_data = _build_input_frame(data)
-        input_array = input_data.to_numpy(dtype=float)
-
-        prediksi_naive_bayes = _predict_with_algorithm("naive_bayes", input_array)
-        algoritma_terbaik = _predict_with_algorithm(BEST_ALGORITHM_KEY, input_array)
-
+        validated = _validate_payload(payload)
+        input_features = validated["features"]
+        result = _predict_one(input_features)
         return {
-            "nama": data.nama,
-            "no_kk": data.no_kk,
-            "total_pendapatan": float(input_data["TOTAL_PENDAPATAN"].iloc[0]),
-            "prediksi_naive_bayes": prediksi_naive_bayes,
-            "algoritma_terbaik": algoritma_terbaik,
-            "perbandingan_akurasi": {
-                "naive_bayes": {
-                    "akurasi_test": _model_score("naive_bayes"),
-                    "cv_mean": float(metrics.get("naive_bayes", {}).get("cv_mean", 0.0)),
-                    "cv_std": float(metrics.get("naive_bayes", {}).get("cv_std", 0.0)),
-                },
-                "decision_tree": {
-                    "akurasi_test": _model_score("decision_tree"),
-                    "cv_mean": float(metrics.get("decision_tree", {}).get("cv_mean", 0.0)),
-                    "cv_std": float(metrics.get("decision_tree", {}).get("cv_std", 0.0)),
-                },
-                "dipilih": ALGORITHM_LABELS[BEST_ALGORITHM_KEY],
+            "status": "success",
+            "target": TARGET,
+            "fitur_digunakan": FEATURES,
+            "input": input_features,
+            "nilai_hasil_feature_engineering": validated["derived_values"],
+            "feature_engineering": {
+                "KATEGORI_TOTAL_PENDAPATAN": (
+                    "Dihitung otomatis dari TOTAL_PENDAPATAN berdasarkan skala pendapatan"
+                ),
+                "KATEGORI_PENDAPATAN_PER_KAPITA": (
+                    "Dihitung otomatis dari TOTAL_PENDAPATAN / (JUMLAH TANGGUNGAN + 1)"
+                ),
+                "KATEGORI_TANGGUNGAN": (
+                    "Rendah jika JUMLAH TANGGUNGAN <= 1, "
+                    "Sedang jika <= 4, Tinggi jika > 4"
+                ),
+                "KATEGORI_RIWAYAT": (
+                    "0 Belum Pernah, 1 1 Kali, 2 2 Kali, 3 3 Kali atau Lebih"
+                ),
             },
-            "analisis_perbandingan": _build_comparison_summary(),
-            "kesimpulan": prediksi_naive_bayes["kelayakan"],
+            "model": {
+                "nama": "Categorical Naive Bayes",
+                "source": artifact.get("source"),
+                "accuracy_test": artifact.get("accuracy_test"),
+            },
+            **result,
         }
     except HTTPException:
         raise
@@ -448,13 +530,7 @@ def predict(data: MustahikRequest):
 
 
 if __name__ == "__main__":
-    try:
-        import uvicorn
-    except ImportError as exc:
-        raise SystemExit(
-            "uvicorn belum terpasang. Jalankan `pip install -r requirements.txt` "
-            "atau `pip install uvicorn`, lalu coba lagi."
-        ) from exc
+    import uvicorn
 
     uvicorn.run(
         "server:app",

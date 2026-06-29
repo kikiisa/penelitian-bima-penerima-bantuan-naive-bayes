@@ -1,0 +1,68 @@
+# ==========================================================
+# 5. FEATURE ENGINEERING
+# ==========================================================
+
+# Total pendapatan keluarga
+df["TOTAL_PENDAPATAN"] = df["SUAMI"] + df["ISTRI"]
+
+# Pendapatan per kapita
+df["PENDAPATAN_PER_KAPITA"] = (
+    df["TOTAL_PENDAPATAN"] /
+    (df["JUMLAH TANGGUNGAN"] + 1)
+)
+
+# Kategori pendapatan
+def kategori_pendapatan(nilai):
+    if nilai <= 850_000:
+        return "Sangat Rendah"
+    elif nilai <= 1_700_000:
+        return "Rendah"
+    elif nilai <= 3_400_000:
+        return "Sedang"
+    else:
+        return "Tinggi"
+
+# Kategori jumlah tanggungan
+def kategori_tanggungan(nilai):
+    if nilai <= 1:
+        return "Rendah"
+    elif nilai <= 4:
+        return "Sedang"
+    else:
+        return "Tinggi"
+
+df["KATEGORI_TOTAL_PENDAPATAN"] = (
+    df["TOTAL_PENDAPATAN"]
+    .apply(kategori_pendapatan)
+)
+
+df["KATEGORI_PENDAPATAN_PER_KAPITA"] = (
+    df["PENDAPATAN_PER_KAPITA"]
+    .apply(kategori_pendapatan)
+)
+
+df["KATEGORI_TANGGUNGAN"] = (
+    df["JUMLAH TANGGUNGAN"]
+    .apply(kategori_tanggungan)
+)
+
+# Kategori riwayat bantuan
+df["KATEGORI_RIWAYAT"] = df['RIWAYAT'].map({
+    0: "Belum Pernah",
+    1: "1 Kali",
+    2: "2 Kali",
+    3: "3 Kali atau Lebih"
+})
+
+print(
+    df[
+        [
+            "TOTAL_PENDAPATAN",
+            "PENDAPATAN_PER_KAPITA",
+            "KATEGORI_TOTAL_PENDAPATAN",
+            "KATEGORI_PENDAPATAN_PER_KAPITA",
+            "KATEGORI_TANGGUNGAN",
+            "KATEGORI_RIWAYAT"
+        ]
+    ].head()
+)

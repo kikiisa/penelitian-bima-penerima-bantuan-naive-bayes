@@ -1,363 +1,400 @@
 <!DOCTYPE html>
-<html lang="id" class="scroll-smooth">
+<html lang="id">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Klasifikasi Mustahik</title>
+    <title>Klasifikasi Mustahik BAZNAS</title>
     <script src="config.js"></script>
+
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    borderRadius: {
-                        'lg': '0.5rem',
-                        'xl': '0.75rem',
+                    colors: {
+                        ink: "#17261f",
+                        moss: "#315C3A",
+                        sage: "#EAF0E6",
+                        paper: "#F7F5F0",
+                        sand: "#E7E1D6",
+                        clay: "#B45A3C"
+                    },
+                    boxShadow: {
+                        paper: "0 18px 50px rgba(35, 49, 38, 0.08)"
                     }
                 }
             }
         }
     </script>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            color-scheme: light;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-width: 320px;
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23566b5a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-position: right 0.85rem center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 2.75rem;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: #315C3A !important;
+            box-shadow: 0 0 0 3px rgba(49, 92, 58, 0.12);
+            outline: none;
+        }
+
+        /* Kept for dynamically rendered result states in the existing JavaScript. */
+        .result-card {
+            display: none;
+            border: 1px solid #d9e1d6;
+            background: #fbfcf9;
+            padding: 1.25rem;
+        }
+
+        .result-card.show {
+            display: block;
+        }
+
+        .result-card.error {
+            border-color: #efc7bb;
+            background: #fff7f4;
+            color: #9f3e22;
+        }
+
+        .result-card.error #prediction {
+            color: #9f3e22;
+        }
+
+        .metric {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            border-top: 1px solid #e5e9e3;
+            padding: 0.8rem 0;
+            font-size: 0.82rem;
+            line-height: 1.35;
+        }
+
+        .metric span {
+            color: #637064;
+        }
+
+        .metric strong {
+            max-width: 60%;
+            color: #243529;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .result-card.error .metric strong,
+        .result-card.error .metric span {
+            color: inherit;
+        }
+
+        .prob-list {
+            display: grid;
+            gap: 0.55rem;
+            margin-top: 0.75rem;
+        }
+
+        .bar {
+            height: 0.35rem;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #e6ece4;
+        }
+
+        .bar span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: #315C3A;
+        }
+
+        @media (max-width: 640px) {
+            .metric strong {
+                max-width: 58%;
+            }
+        }
+    </style>
 </head>
 
-<body class="min-h-screen bg-zinc-50 text-zinc-950 antialiased font-sans">
-
-    <nav class="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div class="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between">
-            <div class="flex items-center gap-6">
-                <a class="flex items-center gap-2 font-bold tracking-tight text-sm sm:text-base" href="#">
-                    <div class="flex h-6 w-6 items-center justify-center rounded-md bg-zinc-900 text-white">
-                        <i class="fa-solid fa-layer-group text-[10px]"></i>
-                    </div>
-                    <span>ZakatAnalytics</span>
-                </a>
-                <div class="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-600">
-                    <a class="transition-colors hover:text-zinc-950" href="#">Dashboard</a>
-                    <a class="transition-colors hover:text-zinc-950 text-zinc-950" href="#aplikasi-sistem">Klasifikasi</a>
-                    <a class="transition-colors hover:text-zinc-950" href="#">Dokumentasi</a>
+<body class="bg-paper font-sans text-ink antialiased">
+    <header class="border-b border-sand bg-[#fcfbf8]">
+        <div class="mx-auto flex w-[min(1180px,calc(100%-32px))] items-center justify-between gap-4 py-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <div class="grid size-10 shrink-0 place-items-center rounded-sm bg-moss text-white shadow-sm">
+                    <i data-lucide="hand-heart" class="size-5" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-[11px] font-bold uppercase tracking-[0.19em] text-moss">Sistem Pendukung Keputusan</div>
+                    <div class="truncate text-sm font-extrabold tracking-tight text-ink sm:text-base">Klasifikasi Mustahik BAZNAS</div>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-zinc-100 text-zinc-800 border border-zinc-200">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                    API Connected
-                </span>
-            </div>
-        </div>
-    </nav>
 
-    <header class="border-b border-zinc-200 bg-white py-16 sm:py-24">
-        <div class="mx-auto max-w-4xl px-4 sm:px-6 text-center space-y-6">
-            <span class="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-900 border border-zinc-200">
-                Kombinasi Machine Learning & Transparansi
-            </span>
-            <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-zinc-900">
-                Klasifikasi Mustahik Tepat Sasaran.
-            </h1>
-            <p class="max-w-2xl mx-auto text-base sm:text-lg text-zinc-500 leading-relaxed">
-                Platform penentuan kelayakan penerima manfaat zakat berbasis data objektif. Menghilangkan bias keputusan, mempercepat proses verifikasi, dan mengoptimalkan akurasi penyaluran.
-            </p>
-            <div class="flex items-center justify-center gap-3 pt-2">
-                <a href="#aplikasi-sistem" class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-zinc-900 text-zinc-50 shadow hover:bg-zinc-900/90 h-10 px-4 py-2 transition-colors">
-                    Mulai Analisis <i class="fa-solid fa-arrow-down ml-2 text-xs"></i>
-                </a>
-                <a href="#" class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-zinc-200 bg-white hover:bg-zinc-100 hover:text-zinc-900 h-10 px-4 py-2 transition-colors">
-                    Pelajari Model
-                </a>
+            <div class="hidden max-w-[42%] items-center gap-2 text-right text-xs text-[#718072] sm:flex">
+                <i data-lucide="radio-tower" class="size-3.5 shrink-0" aria-hidden="true"></i>
+                <span id="apiUrlLabel" class="truncate"></span>
             </div>
         </div>
     </header>
 
-    <main id="aplikasi-sistem" class="mx-auto max-w-6xl px-4 sm:px-6 py-12">
-        <div class="rounded-lg border border-zinc-200 bg-white shadow-sm">
-            
-            <div class="flex flex-col space-y-1.5 p-6 border-b border-zinc-200 bg-zinc-50/50">
-                <h3 class="text-lg font-semibold leading-none tracking-tight">Instrumen Input Kriteria</h3>
-                <p class="text-sm text-zinc-500">
-                    Masukkan parameter sosio-ekonomi calon penerima zakat   
-                </p>
+    <main class="mx-auto w-[min(1180px,calc(100%-32px))] py-8 sm:py-11">
+        <section class="mb-7 border-l-4 border-clay pl-4 sm:mb-9">
+            <div class="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-moss">
+                <span class="size-1.5 rounded-full bg-clay"></span>
+                Penilaian kelayakan bantuan
             </div>
+            <h1 class="max-w-3xl text-3xl font-black tracking-[-0.035em] text-ink sm:text-4xl">Prediksi KELAS TARGET</h1>
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-[#657265] sm:text-[15px]">
+                Form memakai input mentah untuk pendapatan, tanggungan, dan riwayat bantuan; kategori dihitung otomatis sesuai feature engineering.
+            </p>
+        </section>
 
-            <div class="grid gap-0 lg:grid-cols-[1.1fr_0.9fr] divide-y lg:divide-y-0 lg:divide-x divide-zinc-200">
-                
-                <form id="formPredict" class="p-6 space-y-6">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none tracking-tight text-zinc-700">Total Pendapatan (Rp)</label>
-                            <div class="relative rounded-md shadow-sm">
-                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <span class="text-zinc-400 text-xs font-medium">Rp</span>
-                                </div>
-                                <input id="total_pendapatan" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="0"
-                                    class="flex h-10 w-full rounded-md border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm ring-offset-white placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" required>
-                            </div>
+        <section class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.26fr)_minmax(330px,0.74fr)]">
+            <div class="overflow-hidden border border-sand bg-white shadow-paper">
+                <div class="flex items-start justify-between gap-4 border-b border-sand bg-[#fbfcf9] px-5 py-5 sm:px-6">
+                    <div>
+                        <div class="mb-2 flex items-center gap-2">
+                            <i data-lucide="clipboard-list" class="size-4 text-clay" aria-hidden="true"></i>
+                            <h2 class="text-lg font-extrabold tracking-tight text-ink">Input Fitur</h2>
                         </div>
-
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none tracking-tight text-zinc-700">Jumlah Tanggungan</label>
-                            <div class="relative rounded-md shadow-sm">
-                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <i class="fa-solid fa-users text-zinc-400 text-xs"></i>
-                                </div>
-                                <input id="jumlah_tanggungan" type="number" min="0" value="0"
-                                    class="flex h-10 w-full rounded-md border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm ring-offset-white placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2" required>
-                            </div>
-                        </div>
+                        <p class="max-w-xl text-sm leading-6 text-[#6b786c]">Pilih nilai kategori rumah/pekerjaan, lalu isi angka pendapatan, tanggungan, dan riwayat.</p>
                     </div>
+                    <span class="hidden shrink-0 border border-[#d9e5d7] bg-sage px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-moss md:inline-flex">9 variabel</span>
+                </div>
 
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium leading-none tracking-tight text-zinc-700">Jenis Usaha / Pekerjaan</label>
-                        <select id="jenis_usaha_pekerjaan" class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2">
-                            <option value="perdagangan">Perdagangan</option>
-                            <option value="pertanian">Pertanian</option>
-                            <option value="jasa">Jasa</option>
-                            <option value="karyawan">Karyawan</option>
-                            <option value="irt">IRT (Ibu Rumah Tangga)</option>
-                            <option value="pns">PNS / TNI / Polri</option>
-                            <option value="lainnya">Lainnya</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium leading-none tracking-tight text-zinc-700">Kepemilikan Aset</label>
-                        <select id="kepemilikan_aset" class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2">
-                            <option value="0">Tidak ada aset berharga</option>
-                            <option value="1">Ada kepemilikan aset</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium leading-none tracking-tight text-zinc-700">Luas Tempat Tinggal</label>
-                        <select id="luas_tempat_tinggal" class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2">
-                            <option value="sangat kecil">Sangat Kecil</option>
-                            <option value="kecil">Kecil</option>
-                            <option value="sedang">Sedang</option>
-                            <option value="besar">Besar</option>
-                        </select>
-                    </div>
-
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none tracking-tight text-zinc-700">Jenis Dinding</label>
-                            <select id="jenis_dinding" class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2">
-                                <option value="bilik">Bilik bambu / kayu sederhana</option>
-                                <option value="semi">Semi permanen</option>
-                                <option value="tembok">Tembok permanen</option>
+                <form id="formPredict" class="p-5 sm:p-6">
+                    <div class="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                        <div class="grid gap-2">
+                            <label for="jenis_usaha_pekerjaan" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">JENIS USAHA/PEKERJAAN</label>
+                            <select id="jenis_usaha_pekerjaan" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                                <option value="">Pilih jenis usaha</option>
+                                <option>Bekerja</option>
+                                <option>Berdagang</option>
+                                <option>IRT</option>
+                                <option>Karyawan Swasta</option>
+                                <option>Lain-lain</option>
+                                <option>Nelayan</option>
+                                <option>Pegawai Negeri Sipil</option>
+                                <option>Petani</option>
+                                <option>Transportasi</option>
+                                <option>Tukang Kayu</option>
+                                <option>Wiraswasta</option>
                             </select>
                         </div>
 
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none tracking-tight text-zinc-700">Jenis Lantai</label>
-                            <select id="jenis_lantai" class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2">
-                                <option value="keramik">Keramik / Ubin</option>
-                                <option value="semen">Semen kasar</option>
-                                <option value="tanah">Tanah</option>
-                                <option value="panggung">Panggung / Papan</option>
+                        <div class="grid gap-2">
+                            <label for="kepemilikan_aset" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">KEPEMILIKAN ASET</label>
+                            <select id="kepemilikan_aset" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                                <option value="">Pilih kepemilikan aset</option>
+                                <option>Ada</option>
+                                <option>Tidak ada</option>
                             </select>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <label for="luas_tempat_tinggal" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">LUAS TEMPAT TINGGAL</label>
+                            <select id="luas_tempat_tinggal" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                                <option value="">Pilih luas tempat tinggal</option>
+                                <option>Besar</option>
+                                <option>Kecil</option>
+                                <option>Sangat kecil</option>
+                                <option>Sedang</option>
+                            </select>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <label for="jenis_dinding" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">JENIS DINDING</label>
+                            <select id="jenis_dinding" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                                <option value="">Pilih jenis dinding</option>
+                                <option>Bambu/Kayu</option>
+                                <option>Bilik Bambu/Kayu</option>
+                                <option>Semi</option>
+                                <option>Tembok</option>
+                                <option>Tembok/Beton</option>
+                            </select>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <label for="jenis_lantai" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">JENIS LANTAI</label>
+                            <select id="jenis_lantai" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                                <option value="">Pilih jenis lantai</option>
+                                <option>Keramik</option>
+                                <option>Semen</option>
+                                <option>Tanah</option>
+                            </select>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <label for="pendidikan" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">PENDIDIKAN</label>
+                            <select id="pendidikan" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                                <option value="">Pilih pendidikan</option>
+                                <option>Belum Tamat SD</option>
+                                <option>Diploma I</option>
+                                <option>Diploma IV/Strata I</option>
+                                <option>Pelajar/Mahasiswa</option>
+                                <option>SLTA/Sederajat</option>
+                                <option>SLTP/Sederajat</option>
+                                <option>Tamat SD</option>
+                            </select>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <label for="total_pendapatan" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">TOTAL_PENDAPATAN</label>
+                            <input id="total_pendapatan" type="text" inputmode="numeric" autocomplete="off" value="Rp 0" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                        </div>
+
+                        <div class="grid gap-2">
+                            <label for="jumlah_tanggungan" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">JUMLAH TANGGUNGAN</label>
+                            <input id="jumlah_tanggungan" type="number" min="0" step="1" value="0" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                        </div>
+
+                        <div class="grid gap-2 sm:col-span-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="riwayat" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">RIWAYAT PENERIMAAN BANTUAN</label>
+                                <span class="text-[11px] text-[#7a867b]">Skala 0–3</span>
+                            </div>
+                            <input id="riwayat" type="number" min="0" max="3" step="1" value="0" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
                         </div>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row gap-2 pt-2">
-                        <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-zinc-900 text-zinc-50 shadow hover:bg-zinc-900/90 h-10 px-4 py-2 flex-1 transition-colors">
-                            <i class="fa-solid fa-bolt mr-2 text-xs"></i> Analisis Data
+                    <div class="mt-7 flex flex-wrap items-center gap-3 border-t border-sand pt-5">
+                        <button type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-moss px-5 text-sm font-bold text-white transition hover:bg-[#244b2d] focus:outline-none focus:ring-4 focus:ring-[#315c3a]/15">
+                            <i data-lucide="sparkles" class="size-4" aria-hidden="true"></i>
+                            Prediksi
                         </button>
-                        <button type="reset" class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-zinc-200 bg-white hover:bg-zinc-100 hover:text-zinc-900 h-10 px-4 py-2 flex-1 transition-colors">
-                            Reset Form
+                        <button type="reset" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm border border-[#cfd8cf] bg-white px-4 text-sm font-bold text-[#435245] transition hover:border-[#aab8aa] hover:bg-[#fafbf8] focus:outline-none focus:ring-4 focus:ring-[#315c3a]/10">
+                            <i data-lucide="rotate-ccw" class="size-4" aria-hidden="true"></i>
+                            Reset
                         </button>
+                        <span class="ml-auto hidden items-center gap-2 text-xs text-[#788477] md:inline-flex">
+                            <i data-lucide="shield-check" class="size-4 text-moss" aria-hidden="true"></i>
+                            Data diproses melalui endpoint model
+                        </span>
                     </div>
                 </form>
+            </div>
 
-                <div class="p-6 bg-zinc-50/50 flex flex-col justify-between">
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h4 class="text-xs font-bold uppercase tracking-widest text-zinc-500">Hasil Komputasi</h4>
-                            <span class="text-[10px] font-mono bg-zinc-200 text-zinc-800 px-1.5 py-0.5 rounded" id="apiUrlLabel">checking...</span>
-                        </div>
-
-                        <div id="placeholder-result" class="rounded-lg border border-dashed border-zinc-200 bg-white p-8 text-center">
-                            <p class="text-sm text-zinc-600 font-medium">Sistem Siap</p>
-                            <p class="text-xs text-zinc-400 mt-1">Tekan tombol analisis untuk memproses keputusan algoritma.</p>
-                        </div>
-
-                        <div id="result" class="hidden rounded-lg border bg-white p-4 shadow-sm transition-all">
-                            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 pb-4">
-                                <div>
-                                    <p class="text-xs font-bold uppercase tracking-widest text-zinc-500">Prediksi Naive Bayes</p>
-                                    <h5 id="resultTitle" class="mt-1 text-2xl font-extrabold tracking-tight text-zinc-900">-</h5>
-                                </div>
-                                <span id="resultBadge" class="rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700">
-                                    -
-                                </span>
-                            </div>
-
-                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Algoritma</div>
-                                    <div id="resultAlgorithm" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
-                                </div>
-                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Confidence</div>
-                                    <div id="resultConfidence" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
-                                </div>
-                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Akurasi Model</div>
-                                    <div id="resultAccuracy" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
-                                </div>
-                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Status</div>
-                                    <div id="resultStatus" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
-                                </div>
-                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Kelayakan</div>
-                                    <div id="resultKelayakan" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
-                                </div>
-                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3 sm:col-span-2">
-                                    <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Total Pendapatan</div>
-                                    <div id="resultIncome" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
-                                </div>
-                            </div>
-
-                            <div class="mt-5">
-                                <div class="flex items-center justify-between gap-3">
-                                    <h6 class="text-xs font-bold uppercase tracking-widest text-zinc-500">Probabilitas per Kelas</h6>
-                                    <span class="text-[11px] text-zinc-400">Naive Bayes</span>
-                                </div>
-                                <div id="resultProbabilities" class="mt-3 space-y-3"></div>
-                            </div>
-
-                            <div class="mt-5 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                                <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Kesimpulan</div>
-                                <p id="resultSummary" class="mt-1 text-sm leading-6 text-zinc-700">-</p>
-                            </div>
-                            <div id="resultError" class="mt-4 hidden rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
-                        </div>
+            <aside class="overflow-hidden border border-sand bg-white shadow-paper">
+                <div class="border-b border-sand bg-[#fbfcf9] px-5 py-5 sm:px-6">
+                    <div class="mb-2 flex items-center gap-2">
+                        <i data-lucide="chart-no-axes-combined" class="size-4 text-clay" aria-hidden="true"></i>
+                        <h2 class="text-lg font-extrabold tracking-tight text-ink">Hasil Prediksi</h2>
                     </div>
-
-                    <div class="mt-6 text-[11px] text-zinc-400 leading-normal border-t border-zinc-200/60 pt-4 flex gap-2">
-                        <i class="fa-solid fa-info-circle text-zinc-500 mt-0.5"></i>
-                        <span>Model mengambil keputusan berbasis akurasi pengetesan komparatif tertinggi. Selalu lakukan validasi lapangan secara empiris.</span>
-                    </div>
+                    <p class="text-sm leading-6 text-[#6b786c]">Output berasal dari endpoint <code class="border border-[#e2e8df] bg-white px-1.5 py-0.5 font-mono text-xs text-moss">POST /predict</code>.</p>
                 </div>
-            </div>
-        </div>
 
-        <section id="perbandingan-algoritma" class="mt-8 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-            <div class="flex flex-col space-y-1.5 border-b border-zinc-200 bg-zinc-50/50 p-6">
-                <h3 class="text-lg font-semibold leading-none tracking-tight">Analisis Perbandingan Algoritma</h3>
-                <p class="text-sm text-zinc-500">
-                    Ringkasan performa Naive Bayes dan Decision Tree C4.5 berdasarkan metrik evaluasi dari backend.
-                </p>
-            </div>
-
-            <div class="space-y-6 p-6">
-                <div class="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-                    <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-5">
-                        <div class="flex items-start justify-between gap-3">
+                <div class="space-y-4 p-5 sm:p-6">
+                    <div id="placeholder" class="border border-dashed border-[#cfd9ce] bg-[#fbfcf9] px-4 py-5">
+                        <div class="flex items-start gap-3">
+                            <div class="grid size-9 shrink-0 place-items-center rounded-full bg-sage text-moss">
+                                <i data-lucide="mouse-pointer-click" class="size-4" aria-hidden="true"></i>
+                            </div>
                             <div>
-                                <p class="text-xs font-bold uppercase tracking-widest text-zinc-500">Model Terpilih</p>
-                                <h4 id="comparisonWinner" class="mt-2 text-xl font-bold text-zinc-900">Memuat data perbandingan...</h4>
+                                <p class="text-sm font-bold text-ink">Menunggu data input</p>
+                                <p class="mt-1 text-sm leading-5 text-[#6d796e]">Pilih seluruh fitur, lalu tekan tombol prediksi.</p>
                             </div>
-                            <span id="comparisonStatus" class="rounded-full bg-zinc-200 px-3 py-1 text-xs font-semibold text-zinc-700">
-                                Memuat...
-                            </span>
-                        </div>
-                        <p id="comparisonSummary" class="mt-3 text-sm leading-6 text-zinc-600">
-                            Section ini akan menampilkan rekomendasi model terbaik dan alasan pemilihannya.
-                        </p>
-                        <div class="mt-4 rounded-lg border border-zinc-200 bg-white p-4">
-                            <div class="text-xs font-medium uppercase tracking-wide text-zinc-400">Metode Seleksi</div>
-                            <div id="comparisonMetric" class="mt-1 text-sm font-semibold text-zinc-900">-</div>
-                            <div id="comparisonRecommendation" class="mt-2 text-sm text-zinc-600">-</div>
                         </div>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <article id="naiveBayesCard" class="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                            <div class="flex items-center justify-between gap-3">
-                                <h4 class="text-sm font-semibold text-zinc-900">Naive Bayes</h4>
-                                <span id="naiveBayesBadge" class="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-700">
-                                    Menunggu
-                                </span>
+                    <div id="result" class="result-card">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-moss">Prediksi</p>
+                                <div id="prediction" class="mt-2 text-3xl font-black tracking-[-0.035em] text-ink">-</div>
                             </div>
-                            <dl class="mt-4 space-y-3 text-sm">
-                                <div class="flex items-center justify-between gap-3">
-                                    <dt class="text-zinc-500">Akurasi Test</dt>
-                                    <dd id="naiveBayesAccuracy" class="font-semibold text-zinc-900">-</dd>
-                                </div>
-                                <div class="flex items-center justify-between gap-3">
-                                    <dt class="text-zinc-500">CV Mean</dt>
-                                    <dd id="naiveBayesCvMean" class="font-semibold text-zinc-900">-</dd>
-                                </div>
-                                <div class="flex items-center justify-between gap-3">
-                                    <dt class="text-zinc-500">CV Std</dt>
-                                    <dd id="naiveBayesCvStd" class="font-semibold text-zinc-900">-</dd>
-                                </div>
-                            </dl>
-                        </article>
+                            <div class="grid size-10 place-items-center rounded-full bg-sage text-moss">
+                                <i data-lucide="badge-check" class="size-5" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="metric">
+                                <span>Confidence</span>
+                                <strong id="confidence">-</strong>
+                            </div>
+                            <div class="metric">
+                                <span>Akurasi test model</span>
+                                <strong id="accuracy">-</strong>
+                            </div>
+                            <div class="metric">
+                                <span>Sumber model</span>
+                                <strong id="modelSource">-</strong>
+                            </div>
+                            <div class="metric">
+                                <span>Pendapatan per kapita</span>
+                                <strong id="perCapitaIncome">-</strong>
+                            </div>
+                            <div class="metric">
+                                <span>Kategori total pendapatan</span>
+                                <strong id="totalIncomeCategory">-</strong>
+                            </div>
+                            <div class="metric">
+                                <span>Kategori pendapatan per kapita</span>
+                                <strong id="perCapitaCategory">-</strong>
+                            </div>
+                            <div class="metric">
+                                <span>Kategori riwayat bantuan</span>
+                                <strong id="historyCategory">-</strong>
+                            </div>
+                        </div>
+                        <div class="mt-4 border-t border-[#e5e9e3] pt-4">
+                            <strong class="text-xs font-bold uppercase tracking-[0.085em] text-[#435245]">Probabilitas kelas</strong>
+                            <div id="probabilities" class="prob-list"></div>
+                        </div>
+                    </div>
 
-                        <article id="decisionTreeCard" class="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                            <div class="flex items-center justify-between gap-3">
-                                <h4 class="text-sm font-semibold text-zinc-900">Decision Tree C4.5</h4>
-                                <span id="decisionTreeBadge" class="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-700">
-                                    Menunggu
-                                </span>
-                            </div>
-                            <dl class="mt-4 space-y-3 text-sm">
-                                <div class="flex items-center justify-between gap-3">
-                                    <dt class="text-zinc-500">Akurasi Test</dt>
-                                    <dd id="decisionTreeAccuracy" class="font-semibold text-zinc-900">-</dd>
-                                </div>
-                                <div class="flex items-center justify-between gap-3">
-                                    <dt class="text-zinc-500">CV Mean</dt>
-                                    <dd id="decisionTreeCvMean" class="font-semibold text-zinc-900">-</dd>
-                                </div>
-                                <div class="flex items-center justify-between gap-3">
-                                    <dt class="text-zinc-500">CV Std</dt>
-                                    <dd id="decisionTreeCvStd" class="font-semibold text-zinc-900">-</dd>
-                                </div>
-                            </dl>
-                        </article>
+                    <div class="overflow-hidden border border-[#dfe6dd] bg-[#f8faf7]">
+                        <div class="flex items-center gap-2 border-b border-[#dfe6dd] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#667668]">
+                            <i data-lucide="braces" class="size-3.5" aria-hidden="true"></i>
+                            Payload API
+                        </div>
+                        <pre id="payloadPreview" class="max-h-56 overflow-auto px-4 py-3 font-mono text-xs leading-5 text-[#425346]">{}</pre>
                     </div>
                 </div>
-
-                <div class="overflow-hidden rounded-lg border border-zinc-200">
-                    <div class="border-b border-zinc-200 bg-zinc-50 px-4 py-3">
-                        <h5 class="text-sm font-semibold text-zinc-900">Tabel Ringkasan Perbandingan</h5>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-zinc-200 text-sm">
-                            <thead class="bg-white">
-                                <tr class="text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                                    <th class="px-4 py-3">Algoritma</th>
-                                    <th class="px-4 py-3">Akurasi Test</th>
-                                    <th class="px-4 py-3">CV Mean</th>
-                                    <th class="px-4 py-3">CV Std</th>
-                                    <th class="px-4 py-3">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="comparisonRankingBody" class="divide-y divide-zinc-200 bg-white">
-                                <tr>
-                                    <td class="px-4 py-4 text-zinc-500" colspan="5">Memuat data perbandingan...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+            </aside>
         </section>
     </main>
 
+
     <script>
         const API_URL = window.API_URL || "http://127.0.0.1:8000/predict";
-        const COMPARISON_URL = window.API_COMPARISON_URL || API_URL.replace(/\/predict\/?$/, "").replace(/\/$/, "") + "/comparison";
         document.getElementById("apiUrlLabel").textContent = API_URL;
 
-        function formatPercent(value, fractionDigits = 2) {
-            return typeof value === "number" && Number.isFinite(value)
-                ? `${(value * 100).toFixed(fractionDigits)}%`
-                : "-";
+        const fieldMap = [
+            ["JENIS USAHA/PEKERJAAN", "jenis_usaha_pekerjaan"],
+            ["KEPEMILIKAN ASET", "kepemilikan_aset"],
+            ["LUAS TEMPAT TINGGAL", "luas_tempat_tinggal"],
+            ["JENIS DINDING", "jenis_dinding"],
+            ["JENIS LANTAI", "jenis_lantai"],
+            ["PENDIDIKAN", "pendidikan"],
+            ["TOTAL_PENDAPATAN", "total_pendapatan"],
+            ["JUMLAH TANGGUNGAN", "jumlah_tanggungan"],
+            ["RIWAYAT", "riwayat"],
+        ];
+
+        function formatPercent(value) {
+            const number = Number(value);
+            return Number.isFinite(number) ? `${(number * 100).toFixed(2)}%` : "-";
         }
 
         function formatRupiah(value) {
@@ -370,6 +407,17 @@
             }).format(number);
         }
 
+        function parseRupiahInput(value) {
+            const digits = String(value ?? "").replace(/[^\d]/g, "");
+            return digits === "" ? 0 : Number(digits);
+        }
+
+        function formatRupiahInput(value) {
+            return `Rp ${new Intl.NumberFormat("id-ID", {
+                maximumFractionDigits: 0,
+            }).format(parseRupiahInput(value))}`;
+        }
+
         function escapeHtml(value) {
             return String(value)
                 .replace(/&/g, "&amp;")
@@ -379,312 +427,100 @@
                 .replace(/'/g, "&#39;");
         }
 
-        function getComparisonData(payload) {
-            return payload?.data || payload?.analisis_perbandingan || payload || null;
+        function buildPayload() {
+            return Object.fromEntries(
+                fieldMap.map(([jsonKey, elementId]) => {
+                    const element = document.getElementById(elementId);
+                    const value = elementId === "total_pendapatan"
+                        ? parseRupiahInput(element.value)
+                        : element.type === "number" && element.value !== ""
+                            ? Number(element.value)
+                        : element.value;
+                    return [jsonKey, value];
+                })
+            );
         }
 
-        function setResult(title, payload, isError = false) {
-            const resultBox = document.getElementById("result");
-            const placeholder = document.getElementById("placeholder-result");
-
-            if (placeholder) placeholder.classList.add("hidden");
-            resultBox.classList.remove("hidden");
-
-            resultBox.className = "rounded-lg border p-4 shadow-sm transition-all " + 
-                (isError ? "border-red-200 bg-red-50/50" : "border-zinc-200 bg-white");
-
-            if (isError) {
-                const resultTitle = document.getElementById("resultTitle");
-                const resultBadge = document.getElementById("resultBadge");
-                const resultAlgorithm = document.getElementById("resultAlgorithm");
-                const resultConfidence = document.getElementById("resultConfidence");
-                const resultAccuracy = document.getElementById("resultAccuracy");
-                const resultStatus = document.getElementById("resultStatus");
-                const resultKelayakan = document.getElementById("resultKelayakan");
-                const resultIncome = document.getElementById("resultIncome");
-                const resultProbabilities = document.getElementById("resultProbabilities");
-                const resultSummary = document.getElementById("resultSummary");
-                const resultError = document.getElementById("resultError");
-
-                resultTitle.textContent = title;
-                resultBadge.textContent = "Error";
-                resultBadge.className = "rounded-full border border-red-200 bg-red-100 px-3 py-1 text-xs font-semibold text-red-700";
-                resultAlgorithm.textContent = "-";
-                resultConfidence.textContent = "-";
-                resultAccuracy.textContent = "-";
-                resultStatus.textContent = "-";
-                resultKelayakan.textContent = "-";
-                resultIncome.textContent = "-";
-                resultProbabilities.innerHTML = "";
-                resultSummary.textContent = "-";
-                resultError.textContent = payload;
-                resultError.classList.remove("hidden");
-                return;
-            }
-
-            renderPredictionResult(payload);
+        function updatePayloadPreview() {
+            document.getElementById("payloadPreview").textContent = JSON.stringify(buildPayload(), null, 2);
         }
 
-        function clearResult() {
-            const resultBox = document.getElementById("result");
-            const placeholder = document.getElementById("placeholder-result");
-            const resultTitle = document.getElementById("resultTitle");
-            const resultBadge = document.getElementById("resultBadge");
-            const resultAlgorithm = document.getElementById("resultAlgorithm");
-            const resultConfidence = document.getElementById("resultConfidence");
-            const resultAccuracy = document.getElementById("resultAccuracy");
-            const resultStatus = document.getElementById("resultStatus");
-            const resultKelayakan = document.getElementById("resultKelayakan");
-            const resultIncome = document.getElementById("resultIncome");
-            const resultProbabilities = document.getElementById("resultProbabilities");
-            const resultSummary = document.getElementById("resultSummary");
-            const resultError = document.getElementById("resultError");
-
-            if (placeholder) placeholder.classList.remove("hidden");
-            resultBox.classList.add("hidden");
-            resultTitle.textContent = "-";
-            resultBadge.textContent = "-";
-            resultAlgorithm.textContent = "-";
-            resultConfidence.textContent = "-";
-            resultAccuracy.textContent = "-";
-            resultStatus.textContent = "-";
-            resultKelayakan.textContent = "-";
-            resultIncome.textContent = "-";
-            resultProbabilities.innerHTML = "";
-            resultSummary.textContent = "-";
-            resultError.textContent = "";
-            resultError.classList.add("hidden");
+        function showError(message) {
+            document.getElementById("placeholder").style.display = "none";
+            const result = document.getElementById("result");
+            result.className = "result-card show error";
+            document.getElementById("prediction").textContent = "Error";
+            document.getElementById("confidence").textContent = "-";
+            document.getElementById("accuracy").textContent = "-";
+            document.getElementById("modelSource").textContent = "-";
+            document.getElementById("perCapitaIncome").textContent = "-";
+            document.getElementById("totalIncomeCategory").textContent = "-";
+            document.getElementById("perCapitaCategory").textContent = "-";
+            document.getElementById("historyCategory").textContent = "-";
+            document.getElementById("probabilities").innerHTML = escapeHtml(message);
         }
 
-        function renderPredictionResult(payload) {
-            const resultTitle = document.getElementById("resultTitle");
-            const resultBadge = document.getElementById("resultBadge");
-            const resultAlgorithm = document.getElementById("resultAlgorithm");
-            const resultConfidence = document.getElementById("resultConfidence");
-            const resultAccuracy = document.getElementById("resultAccuracy");
-            const resultStatus = document.getElementById("resultStatus");
-            const resultKelayakan = document.getElementById("resultKelayakan");
-            const resultIncome = document.getElementById("resultIncome");
-            const resultProbabilities = document.getElementById("resultProbabilities");
-            const resultSummary = document.getElementById("resultSummary");
-            const resultError = document.getElementById("resultError");
+        function renderResult(data) {
+            document.getElementById("placeholder").style.display = "none";
+            const result = document.getElementById("result");
+            result.className = "result-card show";
 
-            const nb = payload?.prediksi_naive_bayes || payload?.algoritma_terbaik || {};
-            const probabilities = nb?.probabilitas && typeof nb.probabilitas === "object"
-                ? Object.entries(nb.probabilitas)
-                : [];
+            document.getElementById("prediction").textContent = data.prediksi || "-";
+            document.getElementById("confidence").textContent = formatPercent(data.confidence);
+            document.getElementById("accuracy").textContent = formatPercent(data.model?.accuracy_test);
+            document.getElementById("modelSource").textContent = data.model?.source || "-";
+            document.getElementById("perCapitaIncome").textContent = formatRupiah(
+                data.nilai_hasil_feature_engineering?.PENDAPATAN_PER_KAPITA
+            );
+            document.getElementById("totalIncomeCategory").textContent =
+                data.input?.KATEGORI_TOTAL_PENDAPATAN || "-";
+            document.getElementById("perCapitaCategory").textContent =
+                data.input?.KATEGORI_PENDAPATAN_PER_KAPITA || "-";
+            document.getElementById("historyCategory").textContent =
+                data.input?.KATEGORI_RIWAYAT || "-";
 
-            const kelayakanIsLayak = String(nb?.kelayakan || "").toLowerCase() === "layak";
-            const badgeClass = kelayakanIsLayak
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-amber-200 bg-amber-50 text-amber-700";
+            const probabilities = Object.entries(data.probabilitas || {})
+                .sort((a, b) => Number(b[1]) - Number(a[1]));
 
-            resultTitle.textContent = nb?.status || "Hasil Prediksi";
-            resultBadge.textContent = nb?.kelayakan || "-";
-            resultBadge.className = `rounded-full border px-3 py-1 text-xs font-semibold ${badgeClass}`;
-            resultAlgorithm.textContent = nb?.nama_algoritma || "Naive Bayes";
-            resultConfidence.textContent = formatPercent(nb?.confidence);
-            resultAccuracy.textContent = formatPercent(nb?.akurasi_model);
-            resultStatus.textContent = nb?.status || "-";
-            resultKelayakan.textContent = nb?.kelayakan || "-";
-            resultIncome.textContent = formatRupiah(payload?.total_pendapatan);
-            resultSummary.textContent = payload?.kesimpulan
-                ? `Prediksi Naive Bayes menyimpulkan ${payload.kesimpulan.toUpperCase()} sebagai status kelayakan.`
-                : "Kesimpulan tidak tersedia.";
-            resultError.textContent = "";
-            resultError.classList.add("hidden");
-
-            if (probabilities.length === 0) {
-                resultProbabilities.innerHTML = `
-                    <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-500">
-                        Probabilitas kelas belum tersedia dari backend.
-                    </div>
-                `;
-                return;
-            }
-
-            const sorted = probabilities.sort((a, b) => Number(b[1]) - Number(a[1]));
-            resultProbabilities.innerHTML = sorted.map(([label, prob]) => {
-                const value = Number(prob);
-                const percent = Number.isFinite(value) ? (value * 100).toFixed(2) : "-";
-                const width = Number.isFinite(value) ? Math.max(0, Math.min(100, value * 100)) : 0;
+            document.getElementById("probabilities").innerHTML = probabilities.map(([label, value]) => {
+                const number = Number(value);
+                const width = Number.isFinite(number) ? Math.max(0, Math.min(100, number * 100)) : 0;
                 return `
-                    <div class="rounded-lg border border-zinc-200 bg-white p-3">
-                        <div class="flex items-center justify-between gap-3 text-sm">
-                            <span class="font-medium text-zinc-800">${escapeHtml(label)}</span>
-                            <span class="font-semibold text-zinc-900">${percent}%</span>
+                    <div>
+                        <div class="metric">
+                            <span>${escapeHtml(label)}</span>
+                            <strong>${formatPercent(number)}</strong>
                         </div>
-                        <div class="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
-                            <div class="h-full rounded-full bg-zinc-900" style="width: ${width}%"></div>
-                        </div>
+                        <div class="bar"><span style="width: ${width}%"></span></div>
                     </div>
                 `;
             }).join("");
         }
 
-        function applyComparisonTheme(cardElement, badgeElement, isWinner) {
-            if (!cardElement || !badgeElement) return;
-
-            cardElement.classList.toggle("border-zinc-900", isWinner);
-            cardElement.classList.toggle("bg-zinc-50", isWinner);
-            cardElement.classList.toggle("shadow-lg", isWinner);
-            cardElement.classList.toggle("ring-1", isWinner);
-            cardElement.classList.toggle("ring-zinc-900/10", isWinner);
-            cardElement.classList.toggle("border-zinc-200", !isWinner);
-            cardElement.classList.toggle("bg-white", !isWinner);
-            cardElement.classList.toggle("shadow-sm", !isWinner);
-
-            badgeElement.classList.toggle("bg-zinc-900", isWinner);
-            badgeElement.classList.toggle("text-white", isWinner);
-            badgeElement.classList.toggle("bg-zinc-100", !isWinner);
-            badgeElement.classList.toggle("text-zinc-700", !isWinner);
-        }
-
-        function renderComparison(data) {
-            const comparison = getComparisonData(data);
-            const comparisonStatus = document.getElementById("comparisonStatus");
-            const comparisonWinner = document.getElementById("comparisonWinner");
-            const comparisonSummary = document.getElementById("comparisonSummary");
-            const comparisonMetric = document.getElementById("comparisonMetric");
-            const comparisonRecommendation = document.getElementById("comparisonRecommendation");
-            const comparisonRankingBody = document.getElementById("comparisonRankingBody");
-
-            const naiveBayesCard = document.getElementById("naiveBayesCard");
-            const decisionTreeCard = document.getElementById("decisionTreeCard");
-            const naiveBayesBadge = document.getElementById("naiveBayesBadge");
-            const decisionTreeBadge = document.getElementById("decisionTreeBadge");
-
-            const rows = Array.isArray(comparison?.rows) ? comparison.rows : [];
-            const winnerKey = comparison?.winner_key || rows[0]?.key;
-            const selectionLabel = comparison?.selection_label || "Cross-Validation Mean";
-            const summaryText = comparison?.summary || "Ringkasan perbandingan belum tersedia.";
-            const recommendationText = comparison?.recommendation || "Gunakan model dengan performa terbaik yang tersedia.";
-
-            comparisonStatus.textContent = winnerKey ? "Selesai" : "Belum tersedia";
-            comparisonWinner.textContent = comparison?.winner_label || "Data perbandingan belum tersedia";
-            comparisonSummary.textContent = summaryText;
-            comparisonMetric.textContent = selectionLabel;
-            comparisonRecommendation.textContent = recommendationText;
-
-            const byKey = Object.fromEntries(rows.map((row) => [row.key, row]));
-            const naiveBayes = byKey.naive_bayes || {};
-            const decisionTree = byKey.decision_tree || {};
-
-            document.getElementById("naiveBayesAccuracy").textContent = formatPercent(naiveBayes.akurasi_test);
-            document.getElementById("naiveBayesCvMean").textContent = formatPercent(naiveBayes.cv_mean);
-            document.getElementById("naiveBayesCvStd").textContent = formatPercent(naiveBayes.cv_std);
-
-            document.getElementById("decisionTreeAccuracy").textContent = formatPercent(decisionTree.akurasi_test);
-            document.getElementById("decisionTreeCvMean").textContent = formatPercent(decisionTree.cv_mean);
-            document.getElementById("decisionTreeCvStd").textContent = formatPercent(decisionTree.cv_std);
-
-            const naiveBayesWinner = winnerKey === "naive_bayes";
-            const decisionTreeWinner = winnerKey === "decision_tree";
-
-            naiveBayesBadge.textContent = naiveBayesWinner ? "Terpilih" : "Pembanding";
-            decisionTreeBadge.textContent = decisionTreeWinner ? "Terpilih" : "Pembanding";
-
-            applyComparisonTheme(naiveBayesCard, naiveBayesBadge, naiveBayesWinner);
-            applyComparisonTheme(decisionTreeCard, decisionTreeBadge, decisionTreeWinner);
-
-            const ranking = rows.length > 0 ? rows : [
-                {
-                    key: "naive_bayes",
-                    nama_algoritma: "Naive Bayes",
-                    akurasi_test: null,
-                    cv_mean: null,
-                    cv_std: null,
-                    selection_score: null,
-                },
-                {
-                    key: "decision_tree",
-                    nama_algoritma: "Decision Tree C4.5",
-                    akurasi_test: null,
-                    cv_mean: null,
-                    cv_std: null,
-                    selection_score: null,
-                },
-            ];
-
-            comparisonRankingBody.innerHTML = ranking.map((row) => {
-                const isWinner = row.key === winnerKey;
-                const statusLabel = isWinner ? "Model utama" : "Pembanding";
-                const rowClass = isWinner ? "bg-zinc-950 text-white" : "bg-white text-zinc-900";
-                const subtle = isWinner ? "text-white/70" : "text-zinc-500";
-                return `
-                    <tr class="${rowClass}">
-                        <td class="px-4 py-4 font-semibold">${row.nama_algoritma || "-"}</td>
-                        <td class="px-4 py-4 ${subtle}">${formatPercent(row.akurasi_test)}</td>
-                        <td class="px-4 py-4 ${subtle}">${formatPercent(row.cv_mean)}</td>
-                        <td class="px-4 py-4 ${subtle}">${formatPercent(row.cv_std)}</td>
-                        <td class="px-4 py-4 font-medium">${statusLabel}</td>
-                    </tr>
-                `;
-            }).join("");
-        }
-
-        async function loadComparisonSection() {
-            try {
-                const response = await fetch(COMPARISON_URL, { method: "GET" });
-                const raw = await response.text();
-                let result = {};
-
-                if (raw) {
-                    try {
-                        result = JSON.parse(raw);
-                    } catch (parseError) {
-                        result = { raw_response: raw };
-                    }
-                }
-
-                if (!response.ok) {
-                    throw new Error(result?.detail || `HTTP ${response.status}`);
-                }
-
-                renderComparison(result);
-            } catch (error) {
-                renderComparison({
-                    winner_label: "Data perbandingan belum tersedia",
-                    selection_label: "Cross-Validation Mean",
-                    summary: "Backend belum mengembalikan data perbandingan, atau server belum berjalan.",
-                    recommendation: `Cek apakah server FastAPI aktif di ${COMPARISON_URL}`,
-                    rows: [],
-                });
-
-                document.getElementById("comparisonStatus").textContent = "Error";
-                document.getElementById("comparisonSummary").textContent = error?.message || "Gagal memuat data perbandingan.";
-            }
-        }
-
-        function formatAngkaIndonesia(value) {
-            const digits = String(value || "").replace(/[^\d]/g, "");
-            if (!digits) return "";
-            return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        }
-
-        function parseAngkaIndonesia(value) {
-            const digits = String(value || "").replace(/[^\d]/g, "");
-            return Number(digits || 0);
-        }
-
-        const totalPendapatanInput = document.getElementById("total_pendapatan");
-        totalPendapatanInput.value = formatAngkaIndonesia("0");
-        totalPendapatanInput.addEventListener("input", function (event) {
-            event.target.value = formatAngkaIndonesia(event.target.value);
+        document.querySelectorAll("select, input").forEach((field) => {
+            field.addEventListener("change", updatePayloadPreview);
+            field.addEventListener("input", updatePayloadPreview);
         });
 
-        document.getElementById("formPredict").addEventListener("submit", async function (e) {
-            e.preventDefault();
+        const totalPendapatanInput = document.getElementById("total_pendapatan");
 
-            const payload = {
-                total_pendapatan: parseAngkaIndonesia(document.getElementById("total_pendapatan").value),
-                jumlah_tanggungan: Number(document.getElementById("jumlah_tanggungan").value || 0),
-                jenis_usaha_pekerjaan: document.getElementById("jenis_usaha_pekerjaan").value,
-                kepemilikan_aset: document.getElementById("kepemilikan_aset").value,
-                luas_tempat_tinggal: document.getElementById("luas_tempat_tinggal").value,
-                jenis_dinding: document.getElementById("jenis_dinding").value,
-                jenis_lantai: document.getElementById("jenis_lantai").value,
-            };
+        totalPendapatanInput.addEventListener("input", () => {
+            totalPendapatanInput.value = formatRupiahInput(totalPendapatanInput.value);
+            updatePayloadPreview();
+        });
+
+        totalPendapatanInput.addEventListener("blur", () => {
+            totalPendapatanInput.value = formatRupiahInput(totalPendapatanInput.value || 0);
+            updatePayloadPreview();
+        });
+
+        totalPendapatanInput.value = formatRupiahInput(totalPendapatanInput.value);
+        updatePayloadPreview();
+
+        document.getElementById("formPredict").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const payload = buildPayload();
+            updatePayloadPreview();
 
             try {
                 const response = await fetch(API_URL, {
@@ -693,45 +529,30 @@
                     body: JSON.stringify(payload),
                 });
 
-                const raw = await response.text();
-                let result = {};
-
-                if (raw) {
-                    try { result = JSON.parse(raw); } 
-                    catch (parseError) { result = { raw_response: raw }; }
-                }
-
+                const data = await response.json();
                 if (!response.ok) {
-                    const message = result?.detail
-                        ? (typeof result.detail === "string" ? result.detail : JSON.stringify(result.detail, null, 2))
-                        : `HTTP ${response.status}`;
-
-                    setResult("⚠️ API ERROR RESPONSE", message, true);
-                    return;
+                    throw new Error(typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail));
                 }
 
-                setResult("✅ PREDIKSI NAIVE BAYES", result, false);
-
-                if (result.analisis_perbandingan) {
-                    renderComparison(result.analisis_perbandingan);
-                }
+                renderResult(data);
             } catch (error) {
-                setResult(
-                    "❌ KONEKSI API GAGAL",
-                    `${error.message || error}\n\nPastikan server FastAPI berjalan aktif di: ${API_URL}`,
-                    true
-                );
+                showError(error.message || "Gagal menghubungi API.");
             }
         });
 
-        document.getElementById("formPredict").addEventListener("reset", function () {
-            clearResult();
+        document.getElementById("formPredict").addEventListener("reset", () => {
             window.setTimeout(() => {
-                totalPendapatanInput.value = formatAngkaIndonesia("0");
+                document.getElementById("placeholder").style.display = "block";
+                document.getElementById("result").className = "result-card";
+                totalPendapatanInput.value = "Rp 0";
+                updatePayloadPreview();
             }, 0);
         });
-
-        loadComparisonSection();
+    </script>
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            if (window.lucide) window.lucide.createIcons();
+        });
     </script>
 </body>
 
