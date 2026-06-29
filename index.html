@@ -146,7 +146,7 @@
                     <i data-lucide="hand-heart" class="size-5" aria-hidden="true"></i>
                 </div>
                 <div class="min-w-0">
-                    <div class="text-[11px] font-bold uppercase tracking-[0.19em] text-moss">Sistem Pendukung Keputusan</div>
+                    <div class="text-[11px] font-bold uppercase tracking-[0.19em] text-moss">DELASIS</div>
                     <div class="truncate text-sm font-extrabold tracking-tight text-ink sm:text-base">Klasifikasi Mustahik BAZNAS</div>
                 </div>
             </div>
@@ -301,7 +301,7 @@
                         <i data-lucide="chart-no-axes-combined" class="size-4 text-clay" aria-hidden="true"></i>
                         <h2 class="text-lg font-extrabold tracking-tight text-ink">Hasil Prediksi</h2>
                     </div>
-                    <p class="text-sm leading-6 text-[#6b786c]">Output berasal dari endpoint <code class="border border-[#e2e8df] bg-white px-1.5 py-0.5 font-mono text-xs text-moss">POST /predict</code>.</p>
+                
                 </div>
 
                 <div class="space-y-4 p-5 sm:p-6">
@@ -336,10 +336,10 @@
                                 <span>Akurasi test model</span>
                                 <strong id="accuracy">-</strong>
                             </div>
-                            <div class="metric">
+                            <!-- <div class="metric">
                                 <span>Sumber model</span>
                                 <strong id="modelSource">-</strong>
-                            </div>
+                            </div> -->
                             <div class="metric">
                                 <span>Pendapatan per kapita</span>
                                 <strong id="perCapitaIncome">-</strong>
@@ -452,7 +452,7 @@
             document.getElementById("prediction").textContent = "Error";
             document.getElementById("confidence").textContent = "-";
             document.getElementById("accuracy").textContent = "-";
-            document.getElementById("modelSource").textContent = "-";
+       
             document.getElementById("perCapitaIncome").textContent = "-";
             document.getElementById("totalIncomeCategory").textContent = "-";
             document.getElementById("perCapitaCategory").textContent = "-";
@@ -468,7 +468,7 @@
             document.getElementById("prediction").textContent = data.prediksi || "-";
             document.getElementById("confidence").textContent = formatPercent(data.confidence);
             document.getElementById("accuracy").textContent = formatPercent(data.model?.accuracy_test);
-            document.getElementById("modelSource").textContent = data.model?.source || "-";
+          
             document.getElementById("perCapitaIncome").textContent = formatRupiah(
                 data.nilai_hasil_feature_engineering?.PENDAPATAN_PER_KAPITA
             );
