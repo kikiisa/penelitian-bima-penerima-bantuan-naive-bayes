@@ -7,29 +7,41 @@
     <title>Klasifikasi Mustahik BAZNAS</title>
     <script src="config.js"></script>
 
-    <!-- Tailwind CSS CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        display: ['Fraunces', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
                     colors: {
-                        ink: "#17261f",
-                        moss: "#315C3A",
-                        sage: "#EAF0E6",
-                        paper: "#F7F5F0",
-                        sand: "#E7E1D6",
-                        clay: "#B45A3C"
+                        ink: "#0C1F16",
+                        moss: "#0E5C3F",
+                        'moss-light': "#147A54",
+                        'moss-deep': "#07362A",
+                        sage: "#E9F3EC",
+                        paper: "#F7F8F5",
+                        sand: "#E2E8DE",
+                        clay: "#B98A2F",
+                        gold: "#C9A24B"
                     },
                     boxShadow: {
-                        paper: "0 18px 50px rgba(35, 49, 38, 0.08)"
+                        premium: "0 24px 48px -20px rgba(12, 47, 33, 0.10), 0 2px 6px -1px rgba(12, 47, 33, 0.04)",
+                        card: "0 36px 70px -18px rgba(9, 42, 29, 0.16)",
+                        glow: "0 0 0 4px rgba(14, 92, 63, 0.12)"
                     }
                 }
             }
         }
     </script>
 
-    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
@@ -41,46 +53,161 @@
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             min-width: 320px;
         }
 
+        /* ============ ANIMATIONS ============ */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(22px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes patternDrift {
+            from { background-position: 0 0; }
+            to { background-position: 120px 120px; }
+        }
+
+        @keyframes floatSoft {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-150%) skewX(-18deg); }
+            100% { transform: translateX(250%) skewX(-18deg); }
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(14px) scale(0.97); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes pulseRing {
+            0% { box-shadow: 0 0 0 0 rgba(201, 162, 75, 0.45); }
+            70% { box-shadow: 0 0 0 8px rgba(201, 162, 75, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(201, 162, 75, 0); }
+        }
+
+        @keyframes spinSlow {
+            to { transform: rotate(360deg); }
+        }
+
+        .anim-up {
+            opacity: 0;
+            animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .delay-1 { animation-delay: 0.08s; }
+        .delay-2 { animation-delay: 0.18s; }
+        .delay-3 { animation-delay: 0.30s; }
+        .delay-4 { animation-delay: 0.42s; }
+        .delay-5 { animation-delay: 0.54s; }
+
+        .dot-pulse {
+            animation: pulseRing 2.2s ease-out infinite;
+        }
+
+        .float-soft {
+            animation: floatSoft 5s ease-in-out infinite;
+        }
+
+        /* Hero geometric pattern — bintang segi delapan bergaya islami */
+        .hero-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23C9A24B' stroke-width='1' stroke-opacity='0.16'%3E%3Cpath d='M60 6 L74 46 L114 60 L74 74 L60 114 L46 74 L6 60 L46 46 Z'/%3E%3Ccircle cx='60' cy='60' r='14'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 120px 120px;
+            animation: patternDrift 40s linear infinite;
+        }
+
+        /* Tombol utama dengan efek kilau */
+        .btn-shine {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-shine::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+            transform: translateX(-150%) skewX(-18deg);
+        }
+
+        .btn-shine:hover::after {
+            animation: shimmer 0.9s ease forwards;
+        }
+
+        /* Kartu interaktif */
+        .lift-card {
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+        }
+
+        .lift-card:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Input & select */
         select {
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23566b5a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-            background-position: right 0.85rem center;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230E5C3F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-position: right 1rem center;
             background-repeat: no-repeat;
             background-size: 16px;
             padding-right: 2.75rem;
         }
 
+        select,
+        input {
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+        }
+
+        select:hover,
+        input:hover {
+            border-color: #9db8a4;
+        }
+
         select:focus,
         input:focus {
-            border-color: #315C3A !important;
-            box-shadow: 0 0 0 3px rgba(49, 92, 58, 0.12);
+            border-color: #0E5C3F !important;
+            box-shadow: 0 0 0 4px rgba(14, 92, 63, 0.12) !important;
             outline: none;
+            background-color: #FDFEFC;
         }
 
         /* Kept for dynamically rendered result states in the existing JavaScript. */
         .result-card {
             display: none;
-            border: 1px solid #d9e1d6;
-            background: #fbfcf9;
-            padding: 1.25rem;
+            border: 1px solid #DFEAE0;
+            background: #FFFFFF;
+            padding: 1.5rem;
+            border-radius: 16px;
         }
 
         .result-card.show {
             display: block;
+            animation: popIn 0.55s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .result-card.error {
-            border-color: #efc7bb;
-            background: #fff7f4;
-            color: #9f3e22;
+            border-color: #F3CFC9;
+            background: #FFF6F4;
+            color: #9C3D2B;
         }
 
         .result-card.error #prediction {
-            color: #9f3e22;
+            color: #9C3D2B;
         }
 
         .metric {
@@ -88,19 +215,20 @@
             align-items: flex-start;
             justify-content: space-between;
             gap: 1rem;
-            border-top: 1px solid #e5e9e3;
-            padding: 0.8rem 0;
-            font-size: 0.82rem;
-            line-height: 1.35;
+            border-top: 1px solid #EEF4EE;
+            padding: 0.9rem 0;
+            font-size: 0.875rem;
+            line-height: 1.4;
         }
 
         .metric span {
-            color: #637064;
+            color: #5C6E60;
+            font-weight: 500;
         }
 
         .metric strong {
             max-width: 60%;
-            color: #243529;
+            color: #0C1F16;
             font-weight: 700;
             text-align: right;
         }
@@ -112,22 +240,42 @@
 
         .prob-list {
             display: grid;
-            gap: 0.55rem;
-            margin-top: 0.75rem;
+            gap: 0.75rem;
+            margin-top: 1rem;
         }
 
         .bar {
-            height: 0.35rem;
+            height: 0.5rem;
             overflow: hidden;
             border-radius: 999px;
-            background: #e6ece4;
+            background: #E4EDE4;
         }
 
         .bar span {
             display: block;
             height: 100%;
             border-radius: inherit;
-            background: #315C3A;
+            background: linear-gradient(90deg, #0E5C3F, #1E8F63);
+            transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Aksesibilitas: hormati preferensi mengurangi gerakan */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .anim-up {
+                opacity: 1;
+            }
+
+            html {
+                scroll-behavior: auto;
+            }
         }
 
         @media (max-width: 640px) {
@@ -138,56 +286,100 @@
     </style>
 </head>
 
-<body class="bg-paper font-sans text-ink antialiased">
-    <header class="border-b border-sand bg-[#fcfbf8]">
-        <div class="mx-auto flex w-[min(1180px,calc(100%-32px))] items-center justify-between gap-4 py-5">
+<body class="bg-paper font-sans text-ink antialiased selection:bg-gold/30">
+    <!-- Garis aksen emas di atas halaman -->
+    <div class="h-1 w-full bg-gradient-to-r from-moss via-gold to-moss"></div>
+
+    <header class="sticky top-0 z-50 border-b border-sand/50 bg-white/85 backdrop-blur-xl">
+        <div class="mx-auto flex w-[min(1180px,calc(100%-32px))] items-center justify-between gap-4 py-3.5">
             <div class="flex min-w-0 items-center gap-3">
-                <div class="grid size-10 shrink-0 place-items-center rounded-sm bg-moss text-white shadow-sm">
-                    <i data-lucide="hand-heart" class="size-5" aria-hidden="true"></i>
+                <div class="grid size-11 shrink-0 place-items-center rounded-2xl border border-sand/70 bg-white p-1.5 shadow-sm transition-transform duration-300 hover:scale-105">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Logo_BAZNAS_RI-Hijau-01.png/960px-Logo_BAZNAS_RI-Hijau-01.png" alt="Logo BAZNAS" srcset="">
                 </div>
                 <div class="min-w-0">
-                    <div class="text-[11px] font-bold uppercase tracking-[0.19em] text-moss">DELASIS</div>
-                    <div class="truncate text-sm font-extrabold tracking-tight text-ink sm:text-base">Klasifikasi Mustahik BAZNAS</div>
+                    <div class="text-[10px] font-extrabold uppercase tracking-[0.28em] text-gold">DELASIS</div>
+                    <div class="truncate text-base font-extrabold tracking-tight text-ink">Klasifikasi Mustahik BAZNAS</div>
                 </div>
             </div>
 
-            <div class="hidden max-w-[42%] items-center gap-2 text-right text-xs text-[#718072] sm:flex">
-                <i data-lucide="radio-tower" class="size-3.5 shrink-0" aria-hidden="true"></i>
-                <span id="apiUrlLabel" class="truncate"></span>
+            <div class="hidden max-w-[42%] items-center gap-2 rounded-full border border-sand/70 bg-paper px-3.5 py-1.5 text-right text-xs text-[#5C6E60] sm:flex">
+                <span class="relative flex h-2 w-2 shrink-0">
+                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-moss opacity-60"></span>
+                    <span class="relative inline-flex h-2 w-2 rounded-full bg-moss"></span>
+                </span>
+                <i data-lucide="radio-tower" class="size-3.5 shrink-0 text-moss" aria-hidden="true"></i>
+                <span id="apiUrlLabel" class="font-mono truncate"></span>
             </div>
         </div>
     </header>
 
-    <main class="mx-auto w-[min(1180px,calc(100%-32px))] py-8 sm:py-11">
-        <section class="mb-7 border-l-4 border-clay pl-4 sm:mb-9">
-            <div class="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-moss">
-                <span class="size-1.5 rounded-full bg-clay"></span>
-                Penilaian kelayakan bantuan
-            </div>
-            <h1 class="max-w-3xl text-3xl font-black tracking-[-0.035em] text-ink sm:text-4xl">Prediksi KELAS TARGET</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-6 text-[#657265] sm:text-[15px]">
-                Form memakai input mentah untuk pendapatan, tanggungan, dan riwayat bantuan; kategori dihitung otomatis sesuai feature engineering.
-            </p>
-        </section>
+    <!-- ============ HERO ============ -->
+    <section class="relative overflow-hidden bg-moss-deep pb-16 pt-16 text-center sm:pb-24 sm:pt-24">
+        <!-- Pola geometri islami yang bergerak perlahan -->
+        <div class="hero-pattern absolute inset-0 -z-0 opacity-70"></div>
+        <!-- Cahaya lembut -->
+        <div class="pointer-events-none absolute -top-32 left-1/2 h-96 w-[720px] -translate-x-1/2 rounded-full bg-moss/60 blur-[120px]"></div>
+        <div class="pointer-events-none absolute -bottom-40 right-0 h-80 w-96 rounded-full bg-gold/10 blur-[110px]"></div>
 
-        <section class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.26fr)_minmax(330px,0.74fr)]">
-            <div class="overflow-hidden border border-sand bg-white shadow-paper">
-                <div class="flex items-start justify-between gap-4 border-b border-sand bg-[#fbfcf9] px-5 py-5 sm:px-6">
-                    <div>
-                        <div class="mb-2 flex items-center gap-2">
-                            <i data-lucide="clipboard-list" class="size-4 text-clay" aria-hidden="true"></i>
-                            <h2 class="text-lg font-extrabold tracking-tight text-ink">Input Fitur</h2>
+        <div class="relative mx-auto max-w-3xl px-4">
+            <div class="anim-up inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-gold backdrop-blur-sm">
+                <span class="dot-pulse flex h-2 w-2 rounded-full bg-gold"></span>
+                Penilaian Kelayakan Bantuan Efisien
+            </div>
+
+            <h1 class="anim-up delay-1 mt-8 font-display text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl">
+                Prediksi <span class="bg-gradient-to-r from-gold via-[#E5C878] to-gold bg-clip-text italic text-transparent">Kelas Target</span><br class="hidden sm:block">
+                Mustahik
+            </h1>
+
+            <p class="anim-up delay-2 mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
+                Sistem otomatisasi penilaian kelayakan penerima zakat menggunakan kecerdasan buatan. Isi input mentah di bawah ini untuk memulai analisis data.
+            </p>
+
+            <!-- Indikator ringkas -->
+            <div class="anim-up delay-3 mx-auto mt-10 grid max-w-lg grid-cols-3 gap-3 text-left">
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm transition-colors duration-300 hover:border-gold/40 hover:bg-white/10">
+                    <div class="flex items-center gap-2 text-gold"><i data-lucide="layers" class="size-4" aria-hidden="true"></i><span class="text-lg font-extrabold text-white">9</span></div>
+                    <p class="mt-1 text-[11px] font-medium text-white/60">Variabel Fitur</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm transition-colors duration-300 hover:border-gold/40 hover:bg-white/10">
+                    <div class="flex items-center gap-2 text-gold"><i data-lucide="cpu" class="size-4" aria-hidden="true"></i><span class="text-lg font-extrabold text-white">AI</span></div>
+                    <p class="mt-1 text-[11px] font-medium text-white/60">Model Klasifikasi</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm transition-colors duration-300 hover:border-gold/40 hover:bg-white/10">
+                    <div class="flex items-center gap-2 text-gold"><i data-lucide="zap" class="size-4" aria-hidden="true"></i><span class="text-lg font-extrabold text-white">&lt;1s</span></div>
+                    <p class="mt-1 text-[11px] font-medium text-white/60">Waktu Prediksi</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lengkungan transisi ke konten -->
+        <svg class="absolute -bottom-px left-0 w-full text-paper" viewBox="0 0 1440 64" fill="currentColor" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0,64 L0,32 C240,0 480,0 720,16 C960,32 1200,32 1440,8 L1440,64 Z"></path>
+        </svg>
+    </section>
+
+    <main class="mx-auto -mt-2 w-[min(1180px,calc(100%-32px))] pb-24 pt-10">
+        <section class="grid items-start gap-8 lg:grid-cols-[minmax(0,1.24fr)_minmax(340px,0.76fr)]">
+            <div class="anim-up delay-4 lift-card overflow-hidden rounded-3xl border border-sand/60 bg-white shadow-premium hover:shadow-card">
+                <div class="flex items-center justify-between gap-4 border-b border-sand/40 bg-paper/60 px-6 py-5 sm:px-8">
+                    <div class="flex items-center gap-3">
+                        <div class="rounded-xl bg-sage p-2.5 text-moss shadow-sm">
+                            <i data-lucide="clipboard-list" class="size-5" aria-hidden="true"></i>
                         </div>
-                        <p class="max-w-xl text-sm leading-6 text-[#6b786c]">Pilih nilai kategori rumah/pekerjaan, lalu isi angka pendapatan, tanggungan, dan riwayat.</p>
+                        <div>
+                            <h2 class="text-lg font-bold tracking-tight text-ink">Input Data Fitur</h2>
+                            <p class="mt-0.5 text-xs text-[#5C6E60]">Lengkapi kriteria demografi dan finansial pemohon.</p>
+                        </div>
                     </div>
-                    <span class="hidden shrink-0 border border-[#d9e5d7] bg-sage px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-moss md:inline-flex">9 variabel</span>
+                    <span class="hidden shrink-0 rounded-full border border-gold/25 bg-gold/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-clay md:inline-flex">9 Variabel</span>
                 </div>
 
-                <form id="formPredict" class="p-5 sm:p-6">
-                    <div class="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                <form id="formPredict" class="p-6 sm:p-8">
+                    <div class="grid gap-x-5 gap-y-6 sm:grid-cols-2">
                         <div class="grid gap-2">
-                            <label for="jenis_usaha_pekerjaan" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">JENIS USAHA/PEKERJAAN</label>
-                            <select id="jenis_usaha_pekerjaan" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                            <label for="jenis_usaha_pekerjaan" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">JENIS USAHA/PEKERJAAN</label>
+                            <select id="jenis_usaha_pekerjaan" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
                                 <option value="">Pilih jenis usaha</option>
                                 <option>Bekerja</option>
                                 <option>Berdagang</option>
@@ -204,8 +396,8 @@
                         </div>
 
                         <div class="grid gap-2">
-                            <label for="kepemilikan_aset" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">KEPEMILIKAN ASET</label>
-                            <select id="kepemilikan_aset" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                            <label for="kepemilikan_aset" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">KEPEMILIKAN ASET</label>
+                            <select id="kepemilikan_aset" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
                                 <option value="">Pilih kepemilikan aset</option>
                                 <option>Ada</option>
                                 <option>Tidak ada</option>
@@ -213,8 +405,8 @@
                         </div>
 
                         <div class="grid gap-2">
-                            <label for="luas_tempat_tinggal" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">LUAS TEMPAT TINGGAL</label>
-                            <select id="luas_tempat_tinggal" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                            <label for="luas_tempat_tinggal" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">LUAS TEMPAT TINGGAL</label>
+                            <select id="luas_tempat_tinggal" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
                                 <option value="">Pilih luas tempat tinggal</option>
                                 <option>Besar</option>
                                 <option>Kecil</option>
@@ -224,8 +416,8 @@
                         </div>
 
                         <div class="grid gap-2">
-                            <label for="jenis_dinding" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">JENIS DINDING</label>
-                            <select id="jenis_dinding" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                            <label for="jenis_dinding" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">JENIS DINDING</label>
+                            <select id="jenis_dinding" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
                                 <option value="">Pilih jenis dinding</option>
                                 <option>Bambu/Kayu</option>
                                 <option>Bilik Bambu/Kayu</option>
@@ -236,8 +428,8 @@
                         </div>
 
                         <div class="grid gap-2">
-                            <label for="jenis_lantai" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">JENIS LANTAI</label>
-                            <select id="jenis_lantai" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                            <label for="jenis_lantai" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">JENIS LANTAI</label>
+                            <select id="jenis_lantai" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
                                 <option value="">Pilih jenis lantai</option>
                                 <option>Keramik</option>
                                 <option>Semen</option>
@@ -246,8 +438,8 @@
                         </div>
 
                         <div class="grid gap-2">
-                            <label for="pendidikan" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">PENDIDIKAN</label>
-                            <select id="pendidikan" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                            <label for="pendidikan" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">PENDIDIKAN</label>
+                            <select id="pendidikan" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
                                 <option value="">Pilih pendidikan</option>
                                 <option>Belum Tamat SD</option>
                                 <option>Diploma I</option>
@@ -260,125 +452,185 @@
                         </div>
 
                         <div class="grid gap-2">
-                            <label for="total_pendapatan" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">TOTAL_PENDAPATAN</label>
-                            <input id="total_pendapatan" type="text" inputmode="numeric" autocomplete="off" value="Rp 0" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                            <label for="total_pendapatan" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">TOTAL PENDAPATAN</label>
+                            <input id="total_pendapatan" type="text" inputmode="numeric" autocomplete="off" value="Rp 0" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
                         </div>
 
                         <div class="grid gap-2">
-                            <label for="jumlah_tanggungan" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">JUMLAH TANGGUNGAN</label>
-                            <input id="jumlah_tanggungan" type="number" min="0" step="1" value="0" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                            <label for="jumlah_tanggungan" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">JUMLAH TANGGUNGAN</label>
+                            <input id="jumlah_tanggungan" type="number" min="0" step="1" value="0" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
                         </div>
 
                         <div class="grid gap-2 sm:col-span-2">
                             <div class="flex items-center justify-between gap-3">
-                                <label for="riwayat" class="text-xs font-bold uppercase tracking-[0.075em] text-[#435245]">RIWAYAT PENERIMAAN BANTUAN</label>
-                                <span class="text-[11px] text-[#7a867b]">Skala 0–3</span>
+                                <label for="riwayat" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">RIWAYAT PENERIMAAN BANTUAN</label>
+                                <span class="rounded-full bg-sage px-2.5 py-0.5 text-[11px] font-semibold text-moss">Skala 0–3</span>
                             </div>
-                            <input id="riwayat" type="number" min="0" max="3" step="1" value="0" required class="min-h-11 w-full rounded-sm border border-[#cfd8cf] bg-white px-3 py-2.5 text-sm text-ink transition">
+                            <input id="riwayat" type="number" min="0" max="3" step="1" value="0" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
                         </div>
                     </div>
 
-                    <div class="mt-7 flex flex-wrap items-center gap-3 border-t border-sand pt-5">
-                        <button type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-moss px-5 text-sm font-bold text-white transition hover:bg-[#244b2d] focus:outline-none focus:ring-4 focus:ring-[#315c3a]/15">
+                    <div class="mt-8 flex flex-wrap items-center gap-3 border-t border-sand/40 pt-6">
+                        <button type="submit" class="btn-shine inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-moss to-moss-light px-6 text-sm font-semibold text-white shadow-lg shadow-moss/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-moss/30 focus:outline-none focus:ring-4 focus:ring-moss/25 active:translate-y-0">
                             <i data-lucide="sparkles" class="size-4" aria-hidden="true"></i>
-                            Prediksi
+                            Analisis &amp; Prediksi
                         </button>
-                        <button type="reset" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm border border-[#cfd8cf] bg-white px-4 text-sm font-bold text-[#435245] transition hover:border-[#aab8aa] hover:bg-[#fafbf8] focus:outline-none focus:ring-4 focus:ring-[#315c3a]/10">
+                        <button type="reset" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#cfd8cf] bg-white px-5 text-sm font-semibold text-[#435245] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#aab8aa] hover:bg-paper/60 focus:outline-none focus:ring-4 focus:ring-moss/10 active:translate-y-0">
                             <i data-lucide="rotate-ccw" class="size-4" aria-hidden="true"></i>
                             Reset
                         </button>
                         <span class="ml-auto hidden items-center gap-2 text-xs text-[#788477] md:inline-flex">
                             <i data-lucide="shield-check" class="size-4 text-moss" aria-hidden="true"></i>
-                            Data diproses melalui endpoint model
+                            Pemrosesan data terenkripsi &amp; aman
                         </span>
                     </div>
                 </form>
+
+                <div class="border-t border-sand/40 bg-gradient-to-br from-paper/40 to-sage/30 p-6 sm:p-8">
+                    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="max-w-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="rounded-xl bg-white p-2.5 text-moss shadow-sm">
+                                    <i data-lucide="file-spreadsheet" class="size-5" aria-hidden="true"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-bold tracking-tight text-ink">Prediksi dari Excel</h2>
+                                    <p class="mt-0.5 text-xs text-[#5C6E60]">Gunakan format Excel, unggah data, lalu unduh hasil prediksi.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <a id="downloadTemplate" href="#" download="format-prediksi-baznas.xlsx" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-moss/20 bg-white px-5 text-sm font-semibold text-moss transition-all duration-300 hover:-translate-y-0.5 hover:border-moss/40 hover:bg-sage hover:shadow-md focus:outline-none focus:ring-4 focus:ring-moss/10">
+                            <i data-lucide="download" class="size-4" aria-hidden="true"></i>
+                            Download Format Excel
+                        </a>
+                    </div>
+
+                    <form id="excelForm" class="mt-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                        <input id="excelFile" name="file" type="file" accept=".xlsx" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink file:mr-4 file:rounded-lg file:border-0 file:bg-sage file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-moss">
+                        <button id="uploadExcelButton" type="submit" class="btn-shine inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-clay to-[#A2762A] px-6 text-sm font-semibold text-white shadow-lg shadow-clay/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-clay/30 focus:outline-none focus:ring-4 focus:ring-clay/25 active:translate-y-0">
+                            <i data-lucide="upload" class="size-4" aria-hidden="true"></i>
+                            Prediksi Excel
+                        </button>
+                    </form>
+                    <div id="bulkStatus" class="mt-3 hidden rounded-xl border px-4 py-3 text-sm"></div>
+                </div>
             </div>
 
-            <aside class="overflow-hidden border border-sand bg-white shadow-paper">
-                <div class="border-b border-sand bg-[#fbfcf9] px-5 py-5 sm:px-6">
-                    <div class="mb-2 flex items-center gap-2">
-                        <i data-lucide="chart-no-axes-combined" class="size-4 text-clay" aria-hidden="true"></i>
-                        <h2 class="text-lg font-extrabold tracking-tight text-ink">Hasil Prediksi</h2>
-                    </div>
-                
-                </div>
-
-                <div class="space-y-4 p-5 sm:p-6">
-                    <div id="placeholder" class="border border-dashed border-[#cfd9ce] bg-[#fbfcf9] px-4 py-5">
-                        <div class="flex items-start gap-3">
-                            <div class="grid size-9 shrink-0 place-items-center rounded-full bg-sage text-moss">
-                                <i data-lucide="mouse-pointer-click" class="size-4" aria-hidden="true"></i>
+            <aside class="anim-up delay-5 grid gap-6 lg:sticky lg:top-24">
+                <div class="lift-card overflow-hidden rounded-3xl border border-sand/60 bg-white shadow-premium hover:shadow-card">
+                    <div class="relative overflow-hidden border-b border-sand/40 bg-moss-deep px-6 py-5">
+                        <div class="hero-pattern absolute inset-0 opacity-40"></div>
+                        <div class="relative flex items-center gap-3">
+                            <div class="rounded-xl border border-gold/30 bg-white/10 p-2.5 text-gold backdrop-blur-sm">
+                                <i data-lucide="chart-no-axes-combined" class="size-5" aria-hidden="true"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-bold text-ink">Menunggu data input</p>
-                                <p class="mt-1 text-sm leading-5 text-[#6d796e]">Pilih seluruh fitur, lalu tekan tombol prediksi.</p>
+                                <h2 class="text-lg font-bold tracking-tight text-white">Hasil Analisis</h2>
+                                <p class="mt-0.5 text-xs text-white/60">Output kalkulasi model kecerdasan buatan.</p>
                             </div>
                         </div>
                     </div>
 
-                    <div id="result" class="result-card">
-                        <div class="flex items-start justify-between gap-4">
+                    <div class="space-y-5 p-6">
+                        <div id="placeholder" class="rounded-2xl border border-dashed border-[#cfd9ce] bg-paper/60 px-5 py-6">
+                            <div class="flex items-start gap-3">
+                                <div class="float-soft grid size-10 shrink-0 place-items-center rounded-xl bg-sage text-moss shadow-sm">
+                                    <i data-lucide="mouse-pointer-click" class="size-4" aria-hidden="true"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-ink">Menunggu Data Input</p>
+                                    <p class="mt-1 text-xs leading-relaxed text-[#6d796e]">Lengkapi seluruh form parameter di sebelah kiri, kemudian klik tombol prediksi.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="result" class="result-card shadow-sm">
+                            <div class="mb-4 flex items-center justify-between gap-4 border-b border-[#F0F4EF] pb-4">
+                                <div>
+                                    <p class="text-[10px] font-extrabold uppercase tracking-widest text-gold">Hasil Prediksi</p>
+                                    <div id="prediction" class="mt-1 font-display text-3xl font-semibold tracking-tight text-ink">-</div>
+                                </div>
+                                <div class="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-sage to-white text-moss shadow-md ring-1 ring-moss/10">
+                                    <i data-lucide="badge-check" class="size-6" aria-hidden="true"></i>
+                                </div>
+                            </div>
                             <div>
-                                <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-moss">Prediksi</p>
-                                <div id="prediction" class="mt-2 text-3xl font-black tracking-[-0.035em] text-ink">-</div>
+                                <div class="metric">
+                                    <span>Confidence</span>
+                                    <strong id="confidence">-</strong>
+                                </div>
+                                <div class="metric">
+                                    <span>Akurasi Model</span>
+                                    <strong id="accuracy">-</strong>
+                                </div>
+                                <div class="metric">
+                                    <span>Pendapatan per Kapita</span>
+                                    <strong id="perCapitaIncome">-</strong>
+                                </div>
+                                <div class="metric">
+                                    <span>Kategori Total Pendapatan</span>
+                                    <strong id="totalIncomeCategory">-</strong>
+                                </div>
+                                <div class="metric">
+                                    <span>Kategori per Kapita</span>
+                                    <strong id="perCapitaCategory">-</strong>
+                                </div>
+                                <div class="metric">
+                                    <span>Kategori Riwayat</span>
+                                    <strong id="historyCategory">-</strong>
+                                </div>
                             </div>
-                            <div class="grid size-10 place-items-center rounded-full bg-sage text-moss">
-                                <i data-lucide="badge-check" class="size-5" aria-hidden="true"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <div class="metric">
-                                <span>Confidence</span>
-                                <strong id="confidence">-</strong>
-                            </div>
-                            <div class="metric">
-                                <span>Akurasi test model</span>
-                                <strong id="accuracy">-</strong>
-                            </div>
-                            <!-- <div class="metric">
-                                <span>Sumber model</span>
-                                <strong id="modelSource">-</strong>
-                            </div> -->
-                            <div class="metric">
-                                <span>Pendapatan per kapita</span>
-                                <strong id="perCapitaIncome">-</strong>
-                            </div>
-                            <div class="metric">
-                                <span>Kategori total pendapatan</span>
-                                <strong id="totalIncomeCategory">-</strong>
-                            </div>
-                            <div class="metric">
-                                <span>Kategori pendapatan per kapita</span>
-                                <strong id="perCapitaCategory">-</strong>
-                            </div>
-                            <div class="metric">
-                                <span>Kategori riwayat bantuan</span>
-                                <strong id="historyCategory">-</strong>
+                            <div class="mt-5 border-t border-sand/40 pt-4">
+                                <strong class="text-xs font-bold uppercase tracking-wider text-[#435245]">Probabilitas Distribusi</strong>
+                                <div id="probabilities" class="prob-list"></div>
                             </div>
                         </div>
-                        <div class="mt-4 border-t border-[#e5e9e3] pt-4">
-                            <strong class="text-xs font-bold uppercase tracking-[0.085em] text-[#435245]">Probabilitas kelas</strong>
-                            <div id="probabilities" class="prob-list"></div>
-                        </div>
-                    </div>
 
-                    <div class="overflow-hidden border border-[#dfe6dd] bg-[#f8faf7]">
-                        <div class="flex items-center gap-2 border-b border-[#dfe6dd] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#667668]">
-                            <i data-lucide="braces" class="size-3.5" aria-hidden="true"></i>
-                            Payload API
+                        <div class="overflow-hidden rounded-2xl border border-sand/60 bg-paper/40 transition-colors duration-300 hover:border-moss/20">
+                            <div class="flex items-center justify-between border-b border-sand/40 bg-paper/80 px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-[#667668]">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="braces" class="size-3.5 text-moss" aria-hidden="true"></i>
+                                    JSON Payload API
+                                </span>
+                                <span class="rounded bg-moss px-1.5 py-0.5 font-mono text-[9px] font-semibold text-white">POST</span>
+                            </div>
+                            <pre id="payloadPreview" class="max-h-48 overflow-auto bg-white/60 px-4 py-3 font-mono text-[11px] leading-5 text-[#384a3c]">{}</pre>
                         </div>
-                        <pre id="payloadPreview" class="max-h-56 overflow-auto px-4 py-3 font-mono text-xs leading-5 text-[#425346]">{}</pre>
                     </div>
                 </div>
             </aside>
         </section>
     </main>
 
+    <footer class="border-t border-sand/50 bg-white/60">
+        <div class="mx-auto flex w-[min(1180px,calc(100%-32px))] flex-col items-center justify-between gap-2 py-6 text-center text-xs text-[#788477] sm:flex-row sm:text-left">
+            <p class="flex items-center gap-2">
+                <i data-lucide="sparkle" class="size-3.5 text-gold" aria-hidden="true"></i>
+                DELASIS — Sistem Klasifikasi Mustahik BAZNAS
+            </p>
+            <p>Didukung model machine learning &amp; FastAPI</p>
+        </div>
+    </footer>
 
     <script>
         const API_URL = window.API_URL || "http://127.0.0.1:8000/predict";
+        function buildApiUrl(path) {
+            try {
+                const url = new URL(API_URL);
+                const basePath = url.pathname.replace(/\/predict\/?$/, "").replace(/\/$/, "");
+                url.pathname = `${basePath}${path}`;
+                url.search = "";
+                url.hash = "";
+                return url.toString();
+            } catch {
+                return path;
+            }
+        }
+
+        const TEMPLATE_EXCEL_URL = buildApiUrl("/template-excel");
+        const PREDICT_EXCEL_URL = buildApiUrl("/predict-excel");
         document.getElementById("apiUrlLabel").textContent = API_URL;
+        document.getElementById("downloadTemplate").href = TEMPLATE_EXCEL_URL;
 
         const fieldMap = [
             ["JENIS USAHA/PEKERJAAN", "jenis_usaha_pekerjaan"],
@@ -425,6 +677,49 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#39;");
+        }
+
+        function setBulkStatus(message, type = "info") {
+            const status = document.getElementById("bulkStatus");
+            const styles = {
+                info: "border-sand/60 bg-white text-[#5C6E60]",
+                success: "border-[#cfe8d5] bg-[#f4fbf5] text-moss",
+                error: "border-[#f2c7c0] bg-[#fff5f3] text-[#9a3d2a]",
+            };
+            status.className = `mt-3 rounded-xl border px-4 py-3 text-sm ${styles[type] || styles.info}`;
+            status.textContent = message;
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        async function readErrorMessage(response) {
+            try {
+                const data = await response.json();
+                return typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+            } catch {
+                return "Gagal memproses file Excel.";
+            }
+        }
+
+        async function downloadTemplateExcel() {
+            setBulkStatus("Mengunduh format Excel...", "info");
+            const response = await fetch(TEMPLATE_EXCEL_URL);
+            if (!response.ok) {
+                throw new Error(await readErrorMessage(response));
+            }
+
+            const blob = await response.blob();
+            downloadBlob(blob, "format-prediksi-baznas.xlsx");
+            setBulkStatus("Format Excel berhasil diunduh.", "success");
         }
 
         function buildPayload() {
@@ -487,7 +782,7 @@
                 const width = Number.isFinite(number) ? Math.max(0, Math.min(100, number * 100)) : 0;
                 return `
                     <div>
-                        <div class="metric">
+                        <div class="metric !border-0 !py-1 !mt-2">
                             <span>${escapeHtml(label)}</span>
                             <strong>${formatPercent(number)}</strong>
                         </div>
@@ -516,7 +811,6 @@
 
         totalPendapatanInput.value = formatRupiahInput(totalPendapatanInput.value);
         updatePayloadPreview();
-
         document.getElementById("formPredict").addEventListener("submit", async (event) => {
             event.preventDefault();
             const payload = buildPayload();
@@ -537,6 +831,56 @@
                 renderResult(data);
             } catch (error) {
                 showError(error.message || "Gagal menghubungi API.");
+            }
+        });
+
+        document.getElementById("downloadTemplate").addEventListener("click", async (event) => {
+            event.preventDefault();
+            try {
+                await downloadTemplateExcel();
+            } catch (error) {
+                setBulkStatus(
+                    `${error.message || "Format Excel tidak ditemukan."} Pastikan server FastAPI sudah direstart dan berjalan di ${TEMPLATE_EXCEL_URL}.`,
+                    "error"
+                );
+            }
+        });
+
+        document.getElementById("excelForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const fileInput = document.getElementById("excelFile");
+            const uploadButton = document.getElementById("uploadExcelButton");
+            const file = fileInput.files?.[0];
+
+            if (!file) {
+                setBulkStatus("Pilih file Excel terlebih dahulu.", "error");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+            uploadButton.disabled = true;
+            uploadButton.classList.add("opacity-70", "cursor-wait");
+            setBulkStatus("Memproses file Excel...", "info");
+
+            try {
+                const response = await fetch(PREDICT_EXCEL_URL, {
+                    method: "POST",
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(await readErrorMessage(response));
+                }
+
+                const blob = await response.blob();
+                downloadBlob(blob, "hasil-prediksi-baznas.xlsx");
+                setBulkStatus("Prediksi selesai. File hasil sudah diunduh.", "success");
+            } catch (error) {
+                setBulkStatus(error.message || "Gagal memproses file Excel.", "error");
+            } finally {
+                uploadButton.disabled = false;
+                uploadButton.classList.remove("opacity-70", "cursor-wait");
             }
         });
 

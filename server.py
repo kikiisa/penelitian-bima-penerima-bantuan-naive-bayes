@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import math
 import os
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 import joblib
 import pandas as pd
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import CategoricalNB
@@ -120,6 +126,12 @@ def _parse_total_pendapatan(value: Any) -> float:
             detail="TOTAL_PENDAPATAN harus berupa angka.",
         ) from exc
 
+    if not math.isfinite(total_pendapatan):
+        raise HTTPException(
+            status_code=422,
+            detail="TOTAL_PENDAPATAN harus berupa angka valid.",
+        )
+
     if total_pendapatan < 0:
         raise HTTPException(
             status_code=422,
@@ -156,6 +168,12 @@ def _parse_jumlah_tanggungan(value: Any) -> int:
             detail="JUMLAH TANGGUNGAN harus berupa angka.",
         ) from exc
 
+    if not math.isfinite(number):
+        raise HTTPException(
+            status_code=422,
+            detail="JUMLAH TANGGUNGAN harus berupa angka valid.",
+        )
+
     if not number.is_integer():
         raise HTTPException(
             status_code=422,
@@ -186,6 +204,12 @@ def _parse_riwayat(value: Any) -> int:
             status_code=422,
             detail="RIWAYAT harus berupa angka.",
         ) from exc
+
+    if not math.isfinite(number):
+        raise HTTPException(
+            status_code=422,
+            detail="RIWAYAT harus berupa angka valid.",
+        )
 
     if not number.is_integer():
         raise HTTPException(
@@ -239,6 +263,14 @@ def _prepare_dataset() -> pd.DataFrame:
 
 def _normalize_text(value: Any) -> str:
     return " ".join(str(value).strip().split()).casefold()
+
+
+def _is_empty_value(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip() == ""
+    return bool(pd.isna(value))
 
 
 def _build_options(df: pd.DataFrame) -> dict[str, list[str]]:
@@ -340,7 +372,7 @@ def _get_required_numeric_payload(payload: dict[str, Any], aliases: list[str], l
     for alias in aliases:
         if alias in payload:
             value = payload[alias]
-            if value is None or _normalize_text(value) == "":
+            if _is_empty_value(value):
                 raise HTTPException(
                     status_code=422,
                     detail=f"{label} tidak boleh kosong.",
@@ -387,7 +419,7 @@ def _validate_payload(payload: Any) -> dict[str, Any]:
 
     for feature in RAW_CATEGORICAL_FEATURES:
         value = _get_payload_value(payload, feature)
-        if value is None or _normalize_text(value) == "":
+        if _is_empty_value(value):
             raise HTTPException(
                 status_code=422,
                 detail=f"Field '{feature}' tidak boleh kosong.",
@@ -436,11 +468,241 @@ def _predict_one(input_features: dict[str, str]) -> dict[str, Any]:
     }
 
 
+def _write_excel(sheets: dict[str, pd.DataFrame]) -> BytesIO:
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        for sheet_name, frame in sheets.items():
+            frame.to_excel(writer, sheet_name=sheet_name, index=False)
+    output.seek(0)
+    return output
+
+
+def _excel_response(buffer: BytesIO, filename: str) -> StreamingResponse:
+    return StreamingResponse(
+        buffer,
+        media_type=(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ),
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _build_template_excel() -> BytesIO:
+    sample = {
+        "JENIS USAHA/PEKERJAAN": options["JENIS USAHA/PEKERJAAN"][0],
+        "KEPEMILIKAN ASET": options["KEPEMILIKAN ASET"][0],
+        "LUAS TEMPAT TINGGAL": options["LUAS TEMPAT TINGGAL"][0],
+        "JENIS DINDING": options["JENIS DINDING"][0],
+        "JENIS LANTAI": options["JENIS LANTAI"][0],
+        "PENDIDIKAN": options["PENDIDIKAN"][0],
+        "TOTAL_PENDAPATAN": 1500000,
+        "JUMLAH TANGGUNGAN": 2,
+        "RIWAYAT": 0,
+    }
+    guide_rows = []
+    for column in INPUT_PAYLOAD_FIELDS:
+        if column in RAW_CATEGORICAL_FEATURES:
+            guide_rows.append(
+                {
+                    "KOLOM": column,
+                    "KETERANGAN": "Wajib diisi sesuai pilihan.",
+                    "CONTOH/PILIHAN": ", ".join(options[column]),
+                }
+            )
+        elif column == "TOTAL_PENDAPATAN":
+            guide_rows.append(
+                {
+                    "KOLOM": column,
+                    "KETERANGAN": "Wajib diisi angka tanpa format rupiah.",
+                    "CONTOH/PILIHAN": "1500000",
+                }
+            )
+        elif column == "JUMLAH TANGGUNGAN":
+            guide_rows.append(
+                {
+                    "KOLOM": column,
+                    "KETERANGAN": "Wajib diisi bilangan bulat 0 atau lebih.",
+                    "CONTOH/PILIHAN": "2",
+                }
+            )
+        else:
+            guide_rows.append(
+                {
+                    "KOLOM": column,
+                    "KETERANGAN": "Wajib diisi angka skala 0 sampai 3.",
+                    "CONTOH/PILIHAN": "0=Belum Pernah, 1=1 Kali, 2=2 Kali, 3=3 Kali atau Lebih",
+                }
+            )
+
+    max_options = max(len(options[column]) for column in RAW_CATEGORICAL_FEATURES)
+    pilihan_rows = []
+    for row_index in range(max_options):
+        pilihan_rows.append(
+            {
+                column: (
+                    options[column][row_index]
+                    if row_index < len(options[column])
+                    else ""
+                )
+                for column in RAW_CATEGORICAL_FEATURES
+            }
+        )
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        pd.DataFrame([sample], columns=INPUT_PAYLOAD_FIELDS).to_excel(
+            writer,
+            sheet_name="DATA",
+            index=False,
+        )
+        pd.DataFrame(guide_rows).to_excel(writer, sheet_name="PANDUAN", index=False)
+        pd.DataFrame(pilihan_rows).to_excel(writer, sheet_name="PILIHAN", index=False)
+
+        workbook = writer.book
+        data_sheet = workbook["DATA"]
+        guide_sheet = workbook["PANDUAN"]
+        option_sheet = workbook["PILIHAN"]
+
+        header_fill = PatternFill(
+            fill_type="solid",
+            fgColor="EDF2EB",
+        )
+        for sheet in [data_sheet, guide_sheet, option_sheet]:
+            sheet.freeze_panes = "A2"
+            for cell in sheet[1]:
+                cell.font = Font(bold=True, color="111E18")
+                cell.fill = header_fill
+
+        for index, column in enumerate(INPUT_PAYLOAD_FIELDS, start=1):
+            data_sheet.column_dimensions[get_column_letter(index)].width = max(
+                18,
+                len(column) + 4,
+            )
+        guide_sheet.column_dimensions["A"].width = 32
+        guide_sheet.column_dimensions["B"].width = 44
+        guide_sheet.column_dimensions["C"].width = 80
+
+        for index, column in enumerate(RAW_CATEGORICAL_FEATURES, start=1):
+            option_sheet.column_dimensions[get_column_letter(index)].width = max(
+                18,
+                len(column) + 4,
+            )
+            data_column = get_column_letter(INPUT_PAYLOAD_FIELDS.index(column) + 1)
+            option_column = get_column_letter(index)
+            last_option_row = len(options[column]) + 1
+            validation = DataValidation(
+                type="list",
+                formula1=f"'PILIHAN'!${option_column}$2:${option_column}${last_option_row}",
+                allow_blank=False,
+            )
+            validation.error = "Pilih nilai dari dropdown agar format sesuai."
+            validation.errorTitle = "Format tidak valid"
+            validation.prompt = "Pilih salah satu nilai yang tersedia."
+            validation.promptTitle = column
+            data_sheet.add_data_validation(validation)
+            validation.add(f"{data_column}2:{data_column}1000")
+
+        numeric_validations = {
+            "TOTAL_PENDAPATAN": DataValidation(
+                type="decimal",
+                operator="greaterThanOrEqual",
+                formula1="0",
+                allow_blank=False,
+            ),
+            "JUMLAH TANGGUNGAN": DataValidation(
+                type="whole",
+                operator="greaterThanOrEqual",
+                formula1="0",
+                allow_blank=False,
+            ),
+            "RIWAYAT": DataValidation(
+                type="whole",
+                operator="between",
+                formula1="0",
+                formula2="3",
+                allow_blank=False,
+            ),
+        }
+        for column, validation in numeric_validations.items():
+            data_column = get_column_letter(INPUT_PAYLOAD_FIELDS.index(column) + 1)
+            validation.error = "Isi angka sesuai aturan kolom."
+            validation.errorTitle = "Angka tidak valid"
+            data_sheet.add_data_validation(validation)
+            validation.add(f"{data_column}2:{data_column}1000")
+
+    output.seek(0)
+    return output
+
+
+def _format_error_detail(exc: HTTPException) -> str:
+    if isinstance(exc.detail, str):
+        return exc.detail
+    return str(exc.detail)
+
+
+def _predict_excel_rows(frame: pd.DataFrame) -> pd.DataFrame:
+    frame = frame.rename(columns=lambda column: str(column).strip())
+    frame = frame.dropna(how="all")
+    if frame.empty:
+        raise HTTPException(status_code=422, detail="File Excel tidak memiliki data.")
+
+    output_rows: list[dict[str, Any]] = []
+    for row_number, row in enumerate(frame.to_dict(orient="records"), start=2):
+        output_row = dict(row)
+        try:
+            validated = _validate_payload(output_row)
+            prediction = _predict_one(validated["features"])
+            output_row.update(
+                {
+                    "BARIS_EXCEL": row_number,
+                    "STATUS": "success",
+                    "PREDIKSI": prediction["prediksi"],
+                    "CONFIDENCE": prediction["confidence"],
+                    "PENDAPATAN_PER_KAPITA": validated["derived_values"][
+                        "PENDAPATAN_PER_KAPITA"
+                    ],
+                    "KATEGORI_TOTAL_PENDAPATAN": validated["features"][
+                        "KATEGORI_TOTAL_PENDAPATAN"
+                    ],
+                    "KATEGORI_PENDAPATAN_PER_KAPITA": validated["features"][
+                        "KATEGORI_PENDAPATAN_PER_KAPITA"
+                    ],
+                    "KATEGORI_TANGGUNGAN": validated["features"][
+                        "KATEGORI_TANGGUNGAN"
+                    ],
+                    "KATEGORI_RIWAYAT": validated["features"][
+                        "KATEGORI_RIWAYAT"
+                    ],
+                    "ERROR": "",
+                }
+            )
+            for label, probability in prediction["probabilitas"].items():
+                column = "PROBABILITAS_" + str(label).upper().replace(" ", "_")
+                output_row[column] = probability
+        except HTTPException as exc:
+            output_row.update(
+                {
+                    "BARIS_EXCEL": row_number,
+                    "STATUS": "error",
+                    "PREDIKSI": "",
+                    "CONFIDENCE": "",
+                    "ERROR": _format_error_detail(exc),
+                }
+            )
+        output_rows.append(output_row)
+
+    return pd.DataFrame(output_rows)
+
+
 @app.get("/")
 def home():
     return {
         "status": "API aktif",
         "endpoint": "POST /predict",
+        "endpoint_excel": {
+            "template": "GET /template-excel",
+            "upload": "POST /predict-excel",
+        },
         "fitur": FEATURES,
         "target": TARGET,
     }
@@ -486,6 +748,42 @@ def metadata():
             "accuracy_test": artifact.get("accuracy_test"),
         },
     }
+
+
+@app.get("/template-excel")
+@app.get("/download-template-excel")
+@app.get("/format-excel")
+@app.get("/template_excel")
+def download_template_excel():
+    return _excel_response(_build_template_excel(), "format-prediksi-baznas.xlsx")
+
+
+@app.post("/predict-excel")
+@app.post("/upload-excel")
+@app.post("/predict_excel")
+async def predict_excel(file: UploadFile = File(...)):
+    filename = file.filename or ""
+    if not filename.lower().endswith(".xlsx"):
+        raise HTTPException(
+            status_code=422,
+            detail="File harus berformat Excel .xlsx.",
+        )
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=422, detail="File Excel tidak boleh kosong.")
+
+    try:
+        frame = pd.read_excel(BytesIO(content), sheet_name=0)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="File Excel gagal dibaca. Pastikan memakai format template.",
+        ) from exc
+
+    result_frame = _predict_excel_rows(frame)
+    result_excel = _write_excel({"HASIL_PREDIKSI": result_frame})
+    return _excel_response(result_excel, "hasil-prediksi-baznas.xlsx")
 
 
 @app.post("/predict")
