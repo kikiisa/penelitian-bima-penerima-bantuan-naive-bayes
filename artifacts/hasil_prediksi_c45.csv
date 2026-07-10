@@ -1,31 +1,40 @@
 JENIS USAHA/PEKERJAAN,KEPEMILIKAN ASET,LUAS TEMPAT TINGGAL,JENIS DINDING,JENIS LANTAI,PENDIDIKAN,KATEGORI_TOTAL_PENDAPATAN,KATEGORI_PENDAPATAN_PER_KAPITA,KATEGORI_TANGGUNGAN,KATEGORI_RIWAYAT,AKTUAL,PREDIKSI
-Wiraswasta,Ada,Sedang,Tembok/Beton,Keramik,Diploma IV/Strata I,Tinggi,Tinggi,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-IRT,Tidak ada,Kecil,Bilik Bambu/Kayu,Tanah,SLTA/Sederajat,Sangat Rendah,Sangat Rendah,Tinggi,2 Kali,LAYAK,LAYAK
-Berdagang,Ada,Kecil,Tembok,Semen,Pelajar/Mahasiswa,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-IRT,Tidak ada,Kecil,Bilik Bambu/Kayu,Semen,SLTA/Sederajat,Rendah,Sangat Rendah,Tinggi,2 Kali,LAYAK,LAYAK
-Pegawai Negeri Sipil,Ada,Besar,Tembok,Semen,Pelajar/Mahasiswa,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-Petani,Tidak ada,Kecil,Semi,Semen,Belum Tamat SD,Rendah,Sangat Rendah,Tinggi,3 Kali atau Lebih,LAYAK,LAYAK
+Bekerja,Ada,Kecil,Tembok,Semen,Pelajar/Mahasiswa,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Tidak ada,Kecil,Tembok,Panggung,SLTA Sederajat,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,LAYAK
+Berdagang,Tidak ada,Kecil,Tembok,Semen,Tamat SD,Sangat Rendah,Sangat Rendah,Rendah,3 Kali atau Lebih,LAYAK,LAYAK
+Berdagang,Tidak ada,Sedang,Tembok,Keramik,Tamat SD,Sangat Rendah,Sangat Rendah,Sedang,1 Kali,LAYAK,LAYAK
+Pegawai Negeri Sipil,Ada,Besar,Tembok,Keramik,Pelajar/Mahasiswa,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Tidak ada,Kecil,Bilik bambu,Semen,SLTA Sederajat,Sangat Rendah,Sangat Rendah,Sedang,3 Kali atau Lebih,LAYAK,LAYAK
+Berdagang,Tidak ada,Kecil,Tembok/beton,Semen,Pelajar/Mahasiswa,Sangat Rendah,Sangat Rendah,Sedang,1 Kali,LAYAK,LAYAK
+Pegawai Negeri Sipil,Ada,Besar,Tembok,Keramik,Pelajar/Mahasiswa,Sedang,Sangat Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Ada,Besar,Tembok,Keramik,Diploma IV/Strata I,Tinggi,Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Ada,Besar,Tembok,Keramik,Diploma IV/Strata I,Tinggi,Rendah,Sedang,1 Kali,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Tidak ada,Sedang,Tembok/beton,Semen,Tamat SD,Sangat Rendah,Sangat Rendah,Sedang,Belum Pernah,LAYAK,LAYAK
+Berdagang,Tidak ada,Sedang,Tembok/beton,Keramik,Diploma I,Sangat Rendah,Sangat Rendah,Sedang,Belum Pernah,LAYAK,LAYAK
+Berdagang,Ada,Besar,Tembok/Beton,Keramik,Diploma IV/Strata I,Tinggi,Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Tidak ada,Sedang,Tembok,Keramik,Tamat SD,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,LAYAK
+Berdagang,Tidak ada,Sedang,Tembok,Semen,Tamat SD,Sangat Rendah,Sangat Rendah,Tinggi,2 Kali,LAYAK,LAYAK
+Berdagang,Tidak ada,Sedang,Tembok,Keramik,Tamat SD,Sangat Rendah,Sangat Rendah,Rendah,Belum Pernah,LAYAK,LAYAK
+Berdagang,Tidak ada,Kecil,Tembok,Semen,Tamat SD,Sangat Rendah,Sangat Rendah,Sedang,Belum Pernah,LAYAK,LAYAK
+Bekerja,Ada,Kecil,Tembok,Semen,Pelajar/Mahasiswa,Tinggi,Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Transportasi,Ada,Sedang,Tembok,Semen,Diploma IV/Strata I,Tinggi,Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Tidak ada,Kecil,Tembok/beton,Semen,Tamat SD,Sangat Rendah,Sangat Rendah,Tinggi,2 Kali,LAYAK,LAYAK
+Berdagang,tidak ada,kecil,tembok,Semen,SLTP/SEDERAJAT,Sangat Rendah,Sangat Rendah,Sedang,1 Kali,LAYAK,LAYAK
+Karyawan Swasta,Ada,Besar,Tembok/Beton,Keramik,SLTA/Sederajat,Tinggi,Tinggi,Rendah,2 Kali,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Tidak ada,Sedang,Tembok,Semen,Tamat SD,Sangat Rendah,Sangat Rendah,Sedang,3 Kali atau Lebih,LAYAK,LAYAK
+Berdagang,Tidak ada,Sedang,Tembok,Keramik,SLTA Sederajat,Sangat Rendah,Sangat Rendah,Sedang,Belum Pernah,LAYAK,LAYAK
+Berdagang,Tidak ada,Sedang,Tembok/Beton,Keramik,Tamat SD,Sangat Rendah,Sangat Rendah,Tinggi,Belum Pernah,LAYAK,LAYAK
+Berdagang,Tidak ada,Sedang,Tembok/beton,Keramik,SLTP/Sederajat,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,LAYAK
+Berdagang,Tidak ada,Sedang,Tembok/beton,Semen,SLTA/Sederajat,Sangat Rendah,Sangat Rendah,Sedang,Belum Pernah,LAYAK,LAYAK
+Pegawai Negeri Sipil,Ada,Sedang,Tembok/Beton,Keramik,Diploma I,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Ada,Sedang,Tembok/Beton,Semen,Diploma I,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Tidak ada,Sedang,Tembok,Keramik,SLTP Sederajat,Sangat Rendah,Sangat Rendah,Sedang,3 Kali atau Lebih,LAYAK,LAYAK
 Berdagang,Ada,Besar,Tembok/Beton,Keramik,Pelajar/Mahasiswa,Tinggi,Tinggi,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-Transportasi,Ada,Sedang,Tembok,Semen,SLTP/Sederajat,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,TIDAK LAYAK
-IRT,Tidak ada,Kecil,Bilik Bambu/Kayu,Semen,Belum Tamat SD,Rendah,Sangat Rendah,Tinggi,3 Kali atau Lebih,LAYAK,LAYAK
-Wiraswasta,Ada,Besar,Tembok/Beton,Semen,Diploma I,Tinggi,Sedang,Sedang,1 Kali,TIDAK LAYAK,TIDAK LAYAK
-Karyawan Swasta,Ada,Sedang,Tembok,Semen,Diploma I,Tinggi,Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-Transportasi,Tidak ada,Sedang,Semi,Semen,Belum Tamat SD,Rendah,Sangat Rendah,Tinggi,Belum Pernah,LAYAK,LAYAK
-Nelayan,Tidak ada,Kecil,Semi,Tanah,Belum Tamat SD,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,LAYAK
-Karyawan Swasta,Ada,Besar,Tembok/Beton,Keramik,Pelajar/Mahasiswa,Sedang,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-Berdagang,Tidak ada,Sedang,Semi,Keramik,Tamat SD,Rendah,Sangat Rendah,Sedang,1 Kali,LAYAK,LAYAK
-Wiraswasta,Ada,Besar,Tembok/Beton,Keramik,Diploma I,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-Nelayan,Tidak ada,Sangat kecil,Semi,Tanah,SLTA/Sederajat,Rendah,Sangat Rendah,Tinggi,1 Kali,LAYAK,LAYAK
-Transportasi,Ada,Besar,Tembok/Beton,Keramik,SLTA/Sederajat,Sedang,Sangat Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-Berdagang,Ada,Besar,Tembok,Keramik,Pelajar/Mahasiswa,Tinggi,Rendah,Sedang,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-Lain-lain,Tidak ada,Kecil,Tembok,Tanah,SLTP/Sederajat,Rendah,Sangat Rendah,Tinggi,1 Kali,LAYAK,LAYAK
-Wiraswasta,Ada,Sedang,Tembok/Beton,Semen,Diploma I,Sedang,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-Transportasi,Tidak ada,Sangat kecil,Semi,Semen,Belum Tamat SD,Rendah,Sangat Rendah,Sedang,1 Kali,LAYAK,LAYAK
-Karyawan Swasta,Ada,Sedang,Tembok,Semen,Diploma I,Tinggi,Tinggi,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
 Wiraswasta,Ada,Besar,Tembok/Beton,Semen,SLTA/Sederajat,Tinggi,Rendah,Sedang,1 Kali,TIDAK LAYAK,TIDAK LAYAK
-Bekerja,Ada,Besar,Tembok/Beton,Keramik,Diploma I,Tinggi,Sedang,Sedang,1 Kali,TIDAK LAYAK,TIDAK LAYAK
-IRT,Tidak ada,Kecil,Tembok,Semen,SLTA/Sederajat,Rendah,Sangat Rendah,Sedang,Belum Pernah,LAYAK,LAYAK
-Berdagang,Ada,Sedang,Tembok,Semen,Diploma I,Tinggi,Tinggi,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
-Lain-lain,Tidak ada,Kecil,Bilik Bambu/Kayu,Keramik,Belum Tamat SD,Rendah,Sangat Rendah,Sedang,Belum Pernah,LAYAK,LAYAK
-Berdagang,Tidak ada,Sedang,Bilik Bambu/Kayu,Tanah,Belum Tamat SD,Rendah,Sangat Rendah,Tinggi,Belum Pernah,LAYAK,LAYAK
-Tukang Kayu,Tidak ada,Sedang,Semi,Semen,SLTP/Sederajat,Sangat Rendah,Sangat Rendah,Tinggi,Belum Pernah,LAYAK,LAYAK
+Berdagang,Tidak ada,Kecil,Semi,Semen,Tamat SD,Sangat Rendah,Sangat Rendah,Rendah,Belum Pernah,LAYAK,LAYAK
+Berdagang,Tidak ada,Kecil,Tembok,Semen,Tamat SD,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,LAYAK
+Berdagang,Tidak ada,Kecil,Semi,Panggung,SLTP/Sederjat,Sangat Rendah,Sangat Rendah,Tinggi,Belum Pernah,LAYAK,LAYAK
+Karyawan Swasta,Ada,Besar,Tembok/Beton,Keramik,Pelajar/Mahasiswa,Tinggi,Sedang,Rendah,Belum Pernah,TIDAK LAYAK,TIDAK LAYAK
+Berdagang,Tidak ada,Sedang,Tembok,Keramik,Tamat SD,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,LAYAK
+Berdagang,Tidak ada,Kecil,Semi,Semen,SLTP Sederajat,Sangat Rendah,Sangat Rendah,Sedang,2 Kali,LAYAK,LAYAK
+Bekerja,Ada,Sedang,Tembok/Beton,Keramik,Pelajar/Mahasiswa,Tinggi,Rendah,Sedang,1 Kali,TIDAK LAYAK,TIDAK LAYAK

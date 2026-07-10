@@ -1,3 +1,3 @@
 Model,Accuracy_Rata_Rata,Precision_LAYAK_Rata_Rata,Recall_LAYAK_Rata_Rata,F1_LAYAK_Rata_Rata,False_Positive_Rata_Rata
-C4.5,0.9933333333333334,1.0,0.9866666666666667,0.993103448275862,0.0
+C4.5,1.0,1.0,1.0,1.0,0.0
 Naive Bayes,1.0,1.0,1.0,1.0,0.0

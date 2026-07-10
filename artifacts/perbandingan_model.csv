@@ -1,5 +1,5 @@
 Model,Accuracy,Precision_LAYAK,Recall_LAYAK,F1_LAYAK,True_Negative,False_Positive,False_Negative,True_Positive
-Naive Bayes - Tanpa Riwayat Bantuan,1.0,1.0,1.0,1.0,15,0,0,15
-Naive Bayes - Dengan Riwayat Bantuan,1.0,1.0,1.0,1.0,15,0,0,15
-C4.5 - Tanpa Riwayat Bantuan,0.9667,1.0,0.9333,0.9655,15,0,1,14
-C4.5 - Dengan Riwayat Bantuan,0.9667,1.0,0.9333,0.9655,15,0,1,14
+Naive Bayes - Tanpa Riwayat Bantuan,1.0,1.0,1.0,1.0,15,0,0,24
+Naive Bayes - Dengan Riwayat Bantuan,1.0,1.0,1.0,1.0,15,0,0,24
+C4.5 - Tanpa Riwayat Bantuan,1.0,1.0,1.0,1.0,15,0,0,24
+C4.5 - Dengan Riwayat Bantuan,1.0,1.0,1.0,1.0,15,0,0,24
