@@ -378,6 +378,20 @@
 
                 <form id="formPredict" class="p-6 sm:p-8">
                     <div class="grid gap-x-5 gap-y-6 sm:grid-cols-2">
+                        <div class="grid gap-2 sm:col-span-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="algoritma" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">ALGORITMA KLASIFIKASI</label>
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-sage px-2.5 py-0.5 text-[11px] font-semibold text-moss">
+                                    <i data-lucide="cpu" class="size-3" aria-hidden="true"></i>
+                                    Pilih model
+                                </span>
+                            </div>
+                            <select id="algoritma" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm font-semibold text-ink">
+                                <option value="naive_bayes">Naive Bayes</option>
+                                <option value="c45">C4.5 (Decision Tree)</option>
+                            </select>
+                        </div>
+
                         <div class="grid gap-2">
                             <label for="jenis_usaha_pekerjaan" class="text-xs font-bold uppercase tracking-[0.05em] text-[#435245]">JENIS USAHA/PEKERJAAN</label>
                             <select id="jenis_usaha_pekerjaan" required class="min-h-11 w-full rounded-xl border border-[#cfd8cf] bg-white px-3.5 py-2.5 text-sm text-ink">
@@ -557,6 +571,10 @@
                             </div>
                             <div>
                                 <div class="metric">
+                                    <span>Algoritma</span>
+                                    <strong id="algorithmName">-</strong>
+                                </div>
+                                <div class="metric">
                                     <span>Confidence</span>
                                     <strong id="confidence">-</strong>
                                 </div>
@@ -596,6 +614,76 @@
                                 <span class="rounded bg-moss px-1.5 py-0.5 font-mono text-[9px] font-semibold text-white">POST</span>
                             </div>
                             <pre id="payloadPreview" class="max-h-48 overflow-auto bg-white/60 px-4 py-3 font-mono text-[11px] leading-5 text-[#384a3c]">{}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ EVALUASI MODEL ============ -->
+                <div class="lift-card overflow-hidden rounded-3xl border border-sand/60 bg-white shadow-premium hover:shadow-card">
+                    <div class="relative overflow-hidden border-b border-sand/40 bg-moss-deep px-6 py-5">
+                        <div class="hero-pattern absolute inset-0 opacity-40"></div>
+                        <div class="relative flex items-center gap-3">
+                            <div class="rounded-xl border border-gold/30 bg-white/10 p-2.5 text-gold backdrop-blur-sm">
+                                <i data-lucide="gauge" class="size-5" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold tracking-tight text-white">Evaluasi Model</h2>
+                                <p class="mt-0.5 text-xs text-white/60">Performa <span id="metricsModelName">-</span> pada data.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6 p-6">
+                        <div id="metricsError" class="hidden rounded-xl border border-[#f2c7c0] bg-[#fff5f3] px-4 py-3 text-sm text-[#9a3d2a]"></div>
+
+                        <div id="metricsBody" class="space-y-6">
+                            <!-- Stat tiles holdout -->
+                            <div>
+                                <div class="mb-3 flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-gold">
+                                    <i data-lucide="target" class="size-3.5" aria-hidden="true"></i>
+                                    Uji Holdout 80:20
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="rounded-2xl border border-sand/60 bg-paper/50 px-4 py-3">
+                                        <div class="text-[11px] font-semibold text-[#5C6E60]">Accuracy</div>
+                                        <div id="mAcc" class="mt-0.5 font-display text-2xl font-semibold text-ink">-</div>
+                                    </div>
+                                    <div class="rounded-2xl border border-sand/60 bg-paper/50 px-4 py-3">
+                                        <div class="text-[11px] font-semibold text-[#5C6E60]">F1-Score</div>
+                                        <div id="mF1" class="mt-0.5 font-display text-2xl font-semibold text-ink">-</div>
+                                    </div>
+                                    <div class="rounded-2xl border border-sand/60 bg-paper/50 px-4 py-3">
+                                        <div class="text-[11px] font-semibold text-[#5C6E60]">Precision</div>
+                                        <div id="mPrec" class="mt-0.5 font-display text-xl font-semibold text-ink">-</div>
+                                    </div>
+                                    <div class="rounded-2xl border border-sand/60 bg-paper/50 px-4 py-3">
+                                        <div class="text-[11px] font-semibold text-[#5C6E60]">Recall</div>
+                                        <div id="mRec" class="mt-0.5 font-display text-xl font-semibold text-ink">-</div>
+                                    </div>
+                                </div>
+                                <p class="mt-2 text-[11px] leading-relaxed text-[#788477]">Precision/Recall/F1 dihitung untuk kelas <strong>LAYAK</strong>.</p>
+                            </div>
+
+                            <!-- Confusion matrix -->
+                            <div>
+                                <div class="mb-3 flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-gold">
+                                    <i data-lucide="grid-2x2" class="size-3.5" aria-hidden="true"></i>
+                                    Confusion Matrix (Holdout)
+                                </div>
+                                <div id="confusionMatrix" class="overflow-x-auto"></div>
+                            </div>
+
+                            <!-- K-Fold -->
+                            <div>
+                                <div class="mb-3 flex items-center justify-between gap-2">
+                                    <span class="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-gold">
+                                        <i data-lucide="layers-3" class="size-3.5" aria-hidden="true"></i>
+                                        <span id="kfoldTitle">K-Fold Cross Validation</span>
+                                    </span>
+                                    <span id="kfoldSummary" class="rounded-full bg-sage px-2.5 py-0.5 text-[11px] font-semibold text-moss">-</span>
+                                </div>
+                                <div id="kfoldFolds" class="grid gap-2"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -724,7 +812,7 @@
         }
 
         function buildPayload() {
-            return Object.fromEntries(
+            const payload = Object.fromEntries(
                 fieldMap.map(([jsonKey, elementId]) => {
                     const element = document.getElementById(elementId);
                     const value = elementId === "total_pendapatan"
@@ -735,6 +823,8 @@
                     return [jsonKey, value];
                 })
             );
+            payload.algoritma = document.getElementById("algoritma").value;
+            return payload;
         }
 
         function updatePayloadPreview() {
@@ -746,6 +836,7 @@
             const result = document.getElementById("result");
             result.className = "result-card show error";
             document.getElementById("prediction").textContent = "Error";
+            document.getElementById("algorithmName").textContent = "-";
             document.getElementById("confidence").textContent = "-";
             document.getElementById("accuracy").textContent = "-";
        
@@ -762,6 +853,7 @@
             result.className = "result-card show";
 
             document.getElementById("prediction").textContent = data.prediksi || "-";
+            document.getElementById("algorithmName").textContent = data.model?.nama || "-";
             document.getElementById("confidence").textContent = formatPercent(data.confidence);
             document.getElementById("accuracy").textContent = formatPercent(data.model?.accuracy_test);
           
@@ -893,6 +985,104 @@
                 updatePayloadPreview();
             }, 0);
         });
+
+        // ============ EVALUASI MODEL (Confusion Matrix, K-Fold, dll) ============
+        const METRICS_URL = buildApiUrl("/metrics");
+        let metricsCache = null;
+
+        function showMetricsError(message) {
+            const box = document.getElementById("metricsError");
+            box.textContent = message;
+            box.classList.remove("hidden");
+            document.getElementById("metricsBody").classList.add("opacity-40");
+        }
+
+        function buildConfusionMatrix(cm) {
+            const [[tn, fp], [fn, tp]] = cm.matrix;
+            const [neg, pos] = cm.labels;
+            const th = "border border-sand/60 bg-paper/70 px-2 py-1.5 text-[11px] font-semibold text-[#435245]";
+            const ok = "border border-sand/60 bg-moss/10 px-3 py-2.5 font-bold text-moss";
+            const bad = "border border-sand/60 bg-[#fbeae6] px-3 py-2.5 font-bold text-[#9C3D2B]";
+            return `
+                <table class="w-full min-w-[280px] border-collapse text-center text-sm">
+                    <thead>
+                        <tr>
+                            <th class="p-1"></th>
+                            <th class="${th}" colspan="2">Prediksi</th>
+                        </tr>
+                        <tr>
+                            <th class="p-1"></th>
+                            <th class="${th}">${escapeHtml(neg)}</th>
+                            <th class="${th}">${escapeHtml(pos)}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th class="${th} whitespace-nowrap text-left">Aktual ${escapeHtml(neg)}</th>
+                            <td class="${ok}" title="True Negative">${tn}</td>
+                            <td class="${bad}" title="False Positive">${fp}</td>
+                        </tr>
+                        <tr>
+                            <th class="${th} whitespace-nowrap text-left">Aktual ${escapeHtml(pos)}</th>
+                            <td class="${bad}" title="False Negative">${fn}</td>
+                            <td class="${ok}" title="True Positive">${tp}</td>
+                        </tr>
+                    </tbody>
+                </table>`;
+        }
+
+        function renderMetrics(algoKey) {
+            if (!metricsCache || !metricsCache.algoritma) return;
+            const info = metricsCache.algoritma[algoKey];
+            if (!info) return;
+
+            document.getElementById("metricsError").classList.add("hidden");
+            document.getElementById("metricsBody").classList.remove("opacity-40");
+            document.getElementById("metricsModelName").textContent = info.nama;
+
+            const h = info.holdout;
+            document.getElementById("mAcc").textContent = formatPercent(h.accuracy);
+            document.getElementById("mF1").textContent = formatPercent(h.f1_layak);
+            document.getElementById("mPrec").textContent = formatPercent(h.precision_layak);
+            document.getElementById("mRec").textContent = formatPercent(h.recall_layak);
+
+            document.getElementById("confusionMatrix").innerHTML =
+                buildConfusionMatrix(h.confusion_matrix);
+
+            const kf = info.kfold;
+            const acc = kf.ringkasan.accuracy;
+            document.getElementById("kfoldTitle").textContent =
+                `${kf.n_splits}-Fold Cross Validation`;
+            document.getElementById("kfoldSummary").textContent =
+                `Rata-rata ${formatPercent(acc.mean)} ± ${(acc.std * 100).toFixed(2)}%`;
+
+            document.getElementById("kfoldFolds").innerHTML = kf.per_fold.map((fold) => {
+                const width = Math.max(0, Math.min(100, fold.accuracy * 100));
+                return `
+                    <div class="flex items-center gap-3">
+                        <span class="w-14 shrink-0 text-[11px] font-semibold text-[#5C6E60]">Fold ${fold.fold}</span>
+                        <div class="bar flex-1"><span style="width: ${width}%"></span></div>
+                        <span class="w-14 shrink-0 text-right text-[11px] font-bold text-ink">${formatPercent(fold.accuracy)}</span>
+                    </div>`;
+            }).join("");
+        }
+
+        async function loadMetrics() {
+            try {
+                const response = await fetch(METRICS_URL);
+                if (!response.ok) throw new Error();
+                metricsCache = await response.json();
+                renderMetrics(document.getElementById("algoritma").value);
+            } catch {
+                showMetricsError("Gagal memuat evaluasi model. Pastikan server FastAPI berjalan.");
+            }
+        }
+
+        document.getElementById("algoritma").addEventListener("change", (event) => {
+            renderMetrics(event.target.value);
+        });
+
+        loadMetrics();
     </script>
     <script>
         window.addEventListener("DOMContentLoaded", () => {
