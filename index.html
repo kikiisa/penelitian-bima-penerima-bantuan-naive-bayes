@@ -664,15 +664,6 @@
                                 <p class="mt-2 text-[11px] leading-relaxed text-[#788477]">Precision/Recall/F1 dihitung untuk kelas <strong>LAYAK</strong>.</p>
                             </div>
 
-                            <!-- Confusion matrix -->
-                            <div>
-                                <div class="mb-3 flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-gold">
-                                    <i data-lucide="grid-2x2" class="size-3.5" aria-hidden="true"></i>
-                                    Confusion Matrix (Holdout)
-                                </div>
-                                <div id="confusionMatrix" class="overflow-x-auto"></div>
-                            </div>
-
                             <!-- K-Fold -->
                             <div>
                                 <div class="mb-3 flex items-center justify-between gap-2">
@@ -986,7 +977,7 @@
             }, 0);
         });
 
-        // ============ EVALUASI MODEL (Confusion Matrix, K-Fold, dll) ============
+        // ============ EVALUASI MODEL (Holdout, K-Fold, dll) ============
         const METRICS_URL = buildApiUrl("/metrics");
         let metricsCache = null;
 
@@ -995,40 +986,6 @@
             box.textContent = message;
             box.classList.remove("hidden");
             document.getElementById("metricsBody").classList.add("opacity-40");
-        }
-
-        function buildConfusionMatrix(cm) {
-            const [[tn, fp], [fn, tp]] = cm.matrix;
-            const [neg, pos] = cm.labels;
-            const th = "border border-sand/60 bg-paper/70 px-2 py-1.5 text-[11px] font-semibold text-[#435245]";
-            const ok = "border border-sand/60 bg-moss/10 px-3 py-2.5 font-bold text-moss";
-            const bad = "border border-sand/60 bg-[#fbeae6] px-3 py-2.5 font-bold text-[#9C3D2B]";
-            return `
-                <table class="w-full min-w-[280px] border-collapse text-center text-sm">
-                    <thead>
-                        <tr>
-                            <th class="p-1"></th>
-                            <th class="${th}" colspan="2">Prediksi</th>
-                        </tr>
-                        <tr>
-                            <th class="p-1"></th>
-                            <th class="${th}">${escapeHtml(neg)}</th>
-                            <th class="${th}">${escapeHtml(pos)}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th class="${th} whitespace-nowrap text-left">Aktual ${escapeHtml(neg)}</th>
-                            <td class="${ok}" title="True Negative">${tn}</td>
-                            <td class="${bad}" title="False Positive">${fp}</td>
-                        </tr>
-                        <tr>
-                            <th class="${th} whitespace-nowrap text-left">Aktual ${escapeHtml(pos)}</th>
-                            <td class="${bad}" title="False Negative">${fn}</td>
-                            <td class="${ok}" title="True Positive">${tp}</td>
-                        </tr>
-                    </tbody>
-                </table>`;
         }
 
         function renderMetrics(algoKey) {
@@ -1045,9 +1002,6 @@
             document.getElementById("mF1").textContent = formatPercent(h.f1_layak);
             document.getElementById("mPrec").textContent = formatPercent(h.precision_layak);
             document.getElementById("mRec").textContent = formatPercent(h.recall_layak);
-
-            document.getElementById("confusionMatrix").innerHTML =
-                buildConfusionMatrix(h.confusion_matrix);
 
             const kf = info.kfold;
             const acc = kf.ringkasan.accuracy;
